@@ -1,28 +1,33 @@
 import CrudManager from "@/components/crud-manager.tsx";
 import {Authority, operationUsers, User} from "@/services/user-service.ts";
-import {CellContext, ColumnDef} from "@tanstack/react-table";
+import {ColumnDef} from "@tanstack/react-table";
 
 export default function UsersPage() {
   const columns: ColumnDef<User>[] = [
     {
       header: "Id",
       accessorKey: "id",
+      enableSorting: true,
     },
     {
       header: "Nombre de Usuario",
       accessorKey: "representation.username",
+      enableSorting: false,
     },
     {
       header: "Nombre",
       accessorKey: "representation.firstName",
+      enableSorting: false,
     },
     {
       header: "Apellido",
       accessorKey: "representation.lastName",
+      enableSorting: false,
     },
     {
       header: "Correo",
       accessorKey: "representation.email",
+      enableSorting: false,
     },
     {
       header: "Roles",
@@ -40,8 +45,6 @@ export default function UsersPage() {
 
 function RenderRoles({authorities}: { authorities: Authority[] }) {
   return authorities.map((authority) => {
-
-
     return (
       <span key={authority} className="inline-block text-xs font-semibold py-1 px-2 rounded-full border mx-1">
         {getRole(authority)}

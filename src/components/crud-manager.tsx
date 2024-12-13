@@ -22,6 +22,13 @@ import {
   ChevronRight,
   Loader2
 } from "lucide-react";
+import {Input} from "@/components/ui/input.tsx";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu.tsx";
 
 // export type FormToDto<D> = (form: FormEvent<HTMLFormElement>) => D;
 export interface CrudManagerProps<TData, Dto, ID> {
@@ -33,7 +40,7 @@ export interface CrudManagerProps<TData, Dto, ID> {
 export default function CrudManager<TData, Dto, ID>({operations, columns}: Readonly<CrudManagerProps<TData, Dto, ID>>) {
   return (
     <div>
-      <DataTable columns={columns} pageable={operations}/>
+      <CrudTable columns={columns} pageable={operations}/>
     </div>
   )
 }
@@ -43,13 +50,13 @@ interface DataTableProps<TData, TValue> {
   pageable: Pageable<TData>
 }
 
-export function DataTable<TData, TValue>({columns, pageable}: Readonly<DataTableProps<TData, TValue>>) {
+export function CrudTable<TData, TValue>({columns, pageable}: Readonly<DataTableProps<TData, TValue>>) {
 
-  const [pageQuery, setPageQuery] = useState({page: 0, size: 3})
+  const [pageQuery, setPageQuery] = useState({page: 0, size: 5});
   const [data, setData] = useState<Page<TData>>({content: [], page: {totalElements: 0, size: 0, totalPages: 0, number: 0}})
   const [loadingNextPagination, setLoadingNextPagination] = useState(false);
   const [loadingBackPagination, setLoadingBackPagination] = useState(false);
-  const [loadingSort, setLoadingSort] = useState(false
+  const [loadingSort, setLoadingSort] = useState(false);
 
   const table = useReactTable({
     data: data?.content || [],
@@ -83,27 +90,68 @@ export function DataTable<TData, TValue>({columns, pageable}: Readonly<DataTable
 
   return (
     <div>
+      <div className="flex items-center py-4">
+        <Input
+          placeholder="Filter emails..."
+          value={table.getColumn("email")?.getFilterValue() as string}
+          onChange={(event) =>
+            table.getColumn("email")?.setFilterValue(event.target.value)
+          }
+          className="max-w-sm"
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="ml-auto">
+              Columnas
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => {
+                return (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) => column.toggleVisibility(value)}
+                  >
+                    {typeof column.columnDef.header === "string"
+                      ? column.columnDef.header
+                      : ""
+                    }
+                  </DropdownMenuCheckboxItem>
+                )
+              })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map(({column, id, getContext, isPlaceholder}) => {
+                  const columnDef = column.columnDef;
                   return (
                     <TableHead key={id}>
-                      <Button
-                        variant="ghost"
-                        onClick={() => {
-                          setLoadingSort(true);
-                          pageable.page({...pageQuery, properties: [column.columnDef.accessorKey]})
-                            .then(setData)
-                            .catch(console.error)
-                            .finally(() => setLoadingSort(false));
-                        }}
-                      >
-                        {isPlaceholder ? null : flexRender(column.columnDef.header, getContext())}
-                        <ArrowUpDown className="ml-2 h-4 w-4"/>
-                      </Button>
+                      {columnDef.enableSorting
+                        ? <Button
+                          variant="ghost"
+                          onClick={() => {
+                            setLoadingSort(true);
+                            pageable.page({...pageQuery, properties: [""]})
+                              .then(setData)
+                              .catch(console.error)
+                              .finally(() => setLoadingSort(false));
+                          }}
+                        >
+                          {isPlaceholder ? null : flexRender(columnDef.header, getContext())}
+                          <ArrowUpDown className="ml-2 h-4 w-4"/>
+                        </Button>
+                        : (isPlaceholder ? null : flexRender(columnDef.header, getContext()))
+                      }
                     </TableHead>
                   )
                 })}

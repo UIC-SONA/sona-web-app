@@ -1,6 +1,6 @@
 import apiClient from "@/lib/axios.ts";
 import {Message} from "@/lib/types.ts";
-import {CrudOperations, Page, PageQuery} from "@/lib/crud.ts";
+import {CrudOperations, Page, PageQuery, pageQueryToQueryParams} from "@/lib/crud.ts";
 
 export interface SingUp {
   username: string;
@@ -113,9 +113,11 @@ export async function listByRole(role: Authority): Promise<User[]> {
 }
 
 export async function pageByRole(role: Authority, query: PageQuery): Promise<User[]> {
-  const response = await apiClient.post<User[]>(
+  const response = await apiClient.get<User[]>(
     `${resource}/role/${role}/page`,
-    query,
+    {
+      params: pageQueryToQueryParams(query),
+    }
   );
 
   return response.data;
@@ -140,7 +142,7 @@ export async function pageUser(query: PageQuery): Promise<Page<User>> {
   const response = await apiClient.get<Page<User>>(
     `${resource}/page`,
     {
-      params: query,
+      params: pageQueryToQueryParams(query),
     }
   );
 

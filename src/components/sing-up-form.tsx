@@ -9,13 +9,17 @@ import {
 import onlyLogo from "@/assets/only_logo.png";
 import {Input} from "@/components/ui/input.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import {CircleX, Loader2, LockIcon, Mail, UserIcon} from "lucide-react";
+import {
+  Loader2,
+  LockIcon,
+  Mail,
+  UserIcon
+} from "lucide-react";
 import {Link} from "react-router";
 import {FormEvent, useState} from "react";
 import {singUp} from "@/services/user-service.ts";
 import {
   AlertDialog,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -26,6 +30,7 @@ import {
   dispatchAxiosError,
   ErrorTitle
 } from "@/lib/errors.ts";
+import ErrorDialog from "@/components/error-dialog.tsx";
 
 
 export default function SingUpForm() {
@@ -64,24 +69,7 @@ export default function SingUpForm() {
   }
 
   return <>
-    <AlertDialog open={error !== null}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-error flex items-center">
-            <CircleX className="h-6 w-6 text-error mr-2"/>
-            {error?.title}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {error?.description}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => setError(null)}>
-            Ok
-          </AlertDialogCancel>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <ErrorDialog error={error} setError={setError}/>
     <AlertDialog open={success}>
       <AlertDialogContent>
         <AlertDialogHeader>

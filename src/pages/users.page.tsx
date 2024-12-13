@@ -1,8 +1,10 @@
 import CrudManager from "@/components/crud-manager.tsx";
 import {Authority, operationUsers, User} from "@/services/user-service.ts";
 import {ColumnDef} from "@tanstack/react-table";
+import {ItemsOnRounded} from "@/components/utils-componentes.tsx";
 
 export default function UsersPage() {
+  //
   const columns: ColumnDef<User>[] = [
     {
       header: "Id",
@@ -33,27 +35,21 @@ export default function UsersPage() {
       header: "Roles",
       accessorKey: "authorities",
       cell: ({row}) => {
-        return <RenderRoles authorities={row.original.authorities}/>
+        return <ItemsOnRounded items={row.original.authorities} mapper={getRole}/>
       },
     },
-  ]
+  ];
 
   return (
-    <CrudManager columns={columns} operations={operationUsers}/>
+    <CrudManager
+      title={"Usuarios"}
+      columns={columns}
+      operations={operationUsers}
+    />
   );
 }
 
-function RenderRoles({authorities}: { authorities: Authority[] }) {
-  return authorities.map((authority) => {
-    return (
-      <span key={authority} className="inline-block text-xs font-semibold py-1 px-2 rounded-full border mx-1">
-        {getRole(authority)}
-      </span>
-    )
-  })
-}
-
-function getRole(authority: Authority) {
+function getRole(authority: Authority): string {
   switch (authority) {
     case Authority.ADMIN:
       return "Administrador";

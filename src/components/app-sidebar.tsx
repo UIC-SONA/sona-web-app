@@ -45,7 +45,7 @@ const navItems: NavItem[] = [
     items: [
       {
         title: "Administrar",
-        url: "#",
+        url: "/tips",
       },
     ],
   },

@@ -10,6 +10,7 @@ import AuthGuard from "@/components/auth-guard-loading.tsx";
 import SingUpForm from "@/components/sing-up-form.tsx";
 import MainLayout from "@/layout/main-layout.tsx";
 import UsersPage from "@/pages/users.page.tsx";
+import TipsPage from "@/pages/tips.page.tsx";
 
 
 createRoot(document.getElementById('root')!).render(
@@ -21,6 +22,7 @@ createRoot(document.getElementById('root')!).render(
             <Route element={<MainLayout/>}>
               <Route index element={<App/>}/>
               <Route path="users" element={<UsersPage/>}/>
+              <Route path="tips" element={<TipsPage/>}/>
             </Route>
             <Route path="auth" element={<AuthPage/>}>
               <Route path="login" element={<LoginForm/>}/>

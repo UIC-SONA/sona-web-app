@@ -21,8 +21,12 @@ import {
 } from "@/components/ui/sidebar"
 import onlyLogo from "@/assets/only_logo.png";
 import {Separator} from "@/components/ui/separator.tsx";
-import {useEffect, useState} from "react";
+import {
+  useEffect,
+  useState
+} from "react";
 import {profile, User} from "@/services/user-service.ts";
+import {Link} from "react-router";
 
 
 const navItems: NavItem[] = [
@@ -83,17 +87,13 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    profile().then((data) => {
-        setUser(data);
-      }
-    )
+    profile().then(setUser).catch(() => setUser(null));
   }, [setUser]);
 
 
   return (
     <Sidebar collapsible="icon" {...props}>
       <SonaSideBarHeader/>
-      <Separator/>
       <SidebarContent>
         <NavMain items={navItems}/>
       </SidebarContent>
@@ -110,20 +110,22 @@ export function SonaSideBarHeader() {
   return <SidebarHeader>
     <SidebarMenu>
       <SidebarMenuItem>
-        <SidebarMenuButton
-          size="lg"
-          className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-        >
-          <div className="flex aspect-square size-8 items-center justify-center rounded-lg text-sidebar-primary-foreground">
-            <img src={onlyLogo} alt="Logo"/>
-          </div>
-          <div className="grid flex-1 text-left text-sm leading-tight">
+        <Link to="/">
+          <SidebarMenuButton
+            size="lg"
+            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+          >
+            <div className="flex aspect-square size-8 items-center justify-center rounded-lg text-sidebar-primary-foreground">
+              <img src={onlyLogo} alt="Logo"/>
+            </div>
+            <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-semibold">
               SONA
             </span>
-            <span className="truncate text-xs">Bienvenido usuario</span>
-          </div>
-        </SidebarMenuButton>
+              <span className="truncate text-xs">Bienvenido usuario</span>
+            </div>
+          </SidebarMenuButton>
+        </Link>
       </SidebarMenuItem>
     </SidebarMenu>
   </SidebarHeader>

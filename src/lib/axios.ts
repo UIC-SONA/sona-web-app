@@ -1,5 +1,7 @@
 import axios from 'axios';
-import {AccessToken, getStoredToken} from "@/context/auth-context.tsx";
+import {
+  updateAndLoadAccessToken
+} from "@/services/auth-service.ts";
 
 const apiUrl = import.meta.env.VITE_API_URL as string;
 
@@ -11,14 +13,14 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   async (config) => {
-    const token = getStoredToken()
+    const token = await updateAndLoadAccessToken();
     if (token) {
-      const accessToken = JSON.parse(token) as AccessToken;
-      config.headers.Authorization = `Bearer ${accessToken.access_token}`;
+      config.headers.Authorization = `Bearer ${token.access_token}`;
     }
     return config;
   },
   (error) => {
+    console.error('Error setting token:', error);
     return Promise.reject(error);
   }
 );

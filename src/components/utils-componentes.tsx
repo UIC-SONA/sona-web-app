@@ -5,67 +5,51 @@ import {Dialog, DialogContent, DialogTitle} from "@/components/ui/dialog.tsx";
 import {WithUUID} from "@/lib/crud.ts";
 
 interface OpenImageModalProps {
-  fetcher: () => Promise<string>
-  alt: string
+  fetcher: () => Promise<string>;
+  alt: string;
 }
 
 export function OpenImageModal({fetcher, alt}: Readonly<OpenImageModalProps>) {
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!imageSrc && open) {
+      setLoading(true);
+      setError(null); // Reinicia errores previos
+      setImageSrc(null); // Limpia la imagen previa
+
+      fetcher()
+        .then(setImageSrc)
+        .catch((e) => {
+          console.error(e);
+          setError(e.message);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [open, fetcher, imageSrc]);
+
 
   return (
     <>
       <Button onClick={() => setOpen(true)}>
         <ImageIcon/>
       </Button>
-      <ShowImageDialog fetcher={fetcher} open={open} setOpen={setOpen} alt={alt}/>
+      {open && <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="sm:max-w-[425px]" aria-describedby={alt}>
+              <DialogTitle>{alt}</DialogTitle>
+              <div className="flex justify-center">
+                {loading && <Loader2 className="animate-spin"/>}
+                {error && <CircleX className="text-red-500"/>}
+                {imageSrc && <img src={imageSrc} alt={alt} className="w-full"/>}
+              </div>
+          </DialogContent>
+      </Dialog>}
+
     </>
-  )
-}
-
-interface ShowImageDialogProps {
-  fetcher: () => Promise<string>
-  open: boolean
-  setOpen: (open: boolean) => void
-  alt: string
-}
-
-export function ShowImageDialog(
-  {
-    fetcher,
-    open,
-    setOpen,
-    alt
-  }: Readonly<ShowImageDialogProps>) {
-
-  const [loading, setLoading] = useState(true);
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetcher()
-      .then(setImageSrc)
-      .catch((e) => {
-        console.error(e)
-        setError(e.message)
-      })
-      .finally(() => setLoading(false))
-  }, [fetcher])
-
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[425px]" aria-describedby={alt}>
-        <DialogTitle>
-          {alt}
-        </DialogTitle>
-        {loading && <Loader2 className="animate-spin"/>}
-        {error && <CircleX className="text-red-500"/>}
-        {imageSrc && <img src={imageSrc} alt={alt} className="w-full"/>}
-      </DialogContent>
-    </Dialog>
   );
 }
-
 
 export function ClickToShowUUID({id}: Readonly<WithUUID>) {
   const [show, setShow] = useState(false);

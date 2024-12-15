@@ -34,33 +34,28 @@ export function isProblemDetails<TExtensions = Record<never, never>>(
 }
 
 
-export function dispatchAxiosError(error: unknown, setError: (error: ErrorTitle) => void) {
+export function extractError(error: unknown): ErrorTitle {
 
   if (!isAxiosError(error)) {
-    setError({title: "Error inesperado", description: error?.toString() ?? "No se pudo conectar al servidor"});
-    return;
+    return {title: "Error inesperado", description: error?.toString() ?? "No se pudo conectar al servidor"}
   }
 
   const response = error.response;
   if (!response) {
-    setError({title: "Error.", description: "No se pudo conectar al servidor"});
-    return;
+    return {title: "Error.", description: "No se pudo conectar al servidor"};
   }
   const body = response.data;
 
   if (isProblemDetails(body)) {
-    setError({title: body.title, description: body.detail});
-    return;
+    return {title: body.title, description: body.detail};
   }
 
   if (typeof body === 'string') {
-    setError({title: "Error", description: body});
-    return;
+    return {title: "Error", description: body};
   }
 
   if (isAccessTokenError(body)) {
-    setError({title: body.error, description: body.error_description});
-    return;
+    return {title: body.error, description: body.error_description};
   }
-  setError({title: "Error", description: body?.toString() ?? "No se pudo conectar al servidor"});
+  return {title: "Error", description: body?.toString() ?? "No se pudo conectar al servidor"};
 }

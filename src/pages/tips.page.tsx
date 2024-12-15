@@ -8,6 +8,7 @@ import {
   OpenImageModal,
   Truncate
 } from "@/components/utils-componentes.tsx";
+import BreadcrumbSubLayout from "@/layout/breadcrumb-sub-layout.tsx";
 
 export default function TipsPage() {
   const columns: ColumnDef<Tip>[] = [
@@ -64,10 +65,12 @@ export default function TipsPage() {
   ];
 
   return (
-    <CrudManager
-      title={"Tips"}
-      columns={columns}
-      operations={operationTips}
-    />
+    <BreadcrumbSubLayout items={["Tips"]}>
+      <CrudManager
+        title={"Tips"}
+        columns={columns}
+        operations={operationTips}
+      />
+    </BreadcrumbSubLayout>
   );
 }

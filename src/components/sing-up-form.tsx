@@ -1,39 +1,20 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle
-} from "@/components/ui/card.tsx";
+import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card.tsx";
 import onlyLogo from "@/assets/only_logo.png";
 import {Input} from "@/components/ui/input.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import {
-  Loader2,
-  LockIcon,
-  Mail,
-  UserIcon
-} from "lucide-react";
+import {Loader2, LockIcon, Mail, UserIcon} from "lucide-react";
 import {Link} from "react-router";
 import {FormEvent, useState} from "react";
 import {singUp} from "@/services/user-service.ts";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog.tsx";
-import {
-  dispatchAxiosError,
-  ErrorTitle
-} from "@/lib/errors.ts";
-import ErrorDialog from "@/components/error-dialog.tsx";
+import {AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,} from "@/components/ui/alert-dialog.tsx";
+import {extractError} from "@/lib/errors.ts";
+import {useAlertDialog} from "@/hooks/use-alert-dialog.ts";
+import {DialogType} from "@/context/dialog-context.tsx";
 
 
 export default function SingUpForm() {
+
+  const {pushAlertDialog} = useAlertDialog();
 
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState("");
@@ -42,18 +23,17 @@ export default function SingUpForm() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [error, setError] = useState<ErrorTitle | null>(null);
   const [success, setSuccess] = useState(false);
 
   const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
     if ([username, password, repeatPassword, firstName, lastName, email].some((field) => field === "")) {
-      setError({title: "Campos vacíos", description: "Por favor, completa todos los campos"});
+      pushAlertDialog({type: DialogType.ERROR, title: "Campos vacíos", description: "Por favor, completa todos los campos"});
       return;
     }
 
     if (password !== repeatPassword) {
-      setError({title: "Las contraseñas no coinciden", description: "Por favor, verifica que las contraseñas coincidan"});
+      pushAlertDialog({type: DialogType.ERROR, title: "Contraseñas no coinciden", description: "Las contraseñas no coinciden"});
       return;
     }
 
@@ -62,14 +42,14 @@ export default function SingUpForm() {
       await singUp({username, password, firstName, lastName, email});
       setSuccess(true);
     } catch (error) {
-      dispatchAxiosError(error, setError);
+      const err = extractError(error);
+      pushAlertDialog({type: DialogType.ERROR, title: err.title, description: err.description});
     } finally {
       setLoading(false);
     }
   }
 
   return <>
-    <ErrorDialog error={error} setError={setError}/>
     <AlertDialog open={success}>
       <AlertDialogContent>
         <AlertDialogHeader>

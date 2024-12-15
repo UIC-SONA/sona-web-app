@@ -18,6 +18,18 @@ export interface Page<T> {
   page: PageInfo;
 }
 
+export function emptyPage<T>(): Page<T> {
+  return {
+    content: [],
+    page: {
+      size: 0,
+      number: 0,
+      totalPages: 0,
+      totalElements: 0,
+    },
+  };
+}
+
 export enum Direction {
   ASC = "ASC",
   DESC = "DESC",
@@ -29,6 +41,14 @@ export interface PageQuery {
   size: number;
   properties?: string[];
   direction?: Direction;
+}
+
+export function defaultPageQuery(size: number = 10): PageQuery {
+  return {
+    search: "",
+    page: 0,
+    size,
+  };
 }
 
 export type Listable<T> = {

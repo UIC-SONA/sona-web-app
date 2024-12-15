@@ -1,13 +1,14 @@
 import axios from 'axios';
-import {jwtDecode} from "jwt-decode";
+import {jwtDecode, JwtPayload} from "jwt-decode";
 
 
-const tokenEndpoint = import.meta.env.VITE_TOKEN_ENDPOINT as string;
-const introspectionEndpoint = import.meta.env.VITE_INTROSPECTION_ENDPOINT as string;
-const userInfoEndpoint = import.meta.env.VITE_USERINFO_ENDPOINT as string;
-const endSessionEndpoint = import.meta.env.VITE_END_SESSION_ENDPOINT as string;
-const clientId = import.meta.env.VITE_CLIENT_ID as string;
-const clientSecret = import.meta.env.VITE_CLIENT_SECRET as string;
+const TOKEN_END_POINT = import.meta.env.VITE_TOKEN_ENDPOINT as string;
+const INTROSPECTION_ENDPOINT = import.meta.env.VITE_INTROSPECTION_ENDPOINT as string;
+const USER_INFO_ENDPOINT = import.meta.env.VITE_USERINFO_ENDPOINT as string;
+const END_SESSION_ENDPOINT = import.meta.env.VITE_END_SESSION_ENDPOINT as string;
+const CLIENT_ID = import.meta.env.VITE_CLIENT_ID as string;
+const CLIENT_SECRET = import.meta.env.VITE_CLIENT_SECRET as string;
+const ACCESS_TOKEN_KEY = 'access_token';
 
 export interface AccessToken {
   access_token: string;
@@ -37,16 +38,16 @@ export function isAccessTokenError(error: unknown): error is AccessTokenError {
   );
 }
 
-const introspectAuthorization = btoa(`${clientId}:${clientSecret}`);
+const introspectAuthorization = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`);
 const introspectAuthorizationHeader = `Basic ${introspectAuthorization}`;
 
 export async function login(username: string, password: string): Promise<AccessToken> {
   const response = await axios.post<AccessToken>(
-    tokenEndpoint,
+    TOKEN_END_POINT,
     new URLSearchParams({
       grant_type: 'password',
-      client_id: clientId,
-      client_secret: clientSecret,
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
       username,
       password,
       scope: 'openid',
@@ -63,10 +64,10 @@ export async function login(username: string, password: string): Promise<AccessT
 
 export async function logout(accessToken: AccessToken) {
   await axios.post(
-    endSessionEndpoint,
+    END_SESSION_ENDPOINT,
     new URLSearchParams({
-      "client_id": clientId,
-      "client_secret": clientSecret,
+      "client_id": CLIENT_ID,
+      "client_secret": CLIENT_SECRET,
       "refresh_token": accessToken.refresh_token,
     }),
     {
@@ -80,7 +81,7 @@ export async function logout(accessToken: AccessToken) {
 
 export async function userInfo(accessToken: AccessToken): Promise<UserInfo> {
   const response = await axios.get<UserInfo>(
-    userInfoEndpoint,
+    USER_INFO_ENDPOINT,
     {
       headers: {
         Authorization: `Bearer ${accessToken.access_token}`,
@@ -94,7 +95,7 @@ export async function userInfo(accessToken: AccessToken): Promise<UserInfo> {
 export async function introspect(accessToken: AccessToken): Promise<boolean> {
   try {
     const response = await axios.post(
-      introspectionEndpoint,
+      INTROSPECTION_ENDPOINT,
       new URLSearchParams({
         token: accessToken.access_token,
       }),
@@ -115,11 +116,11 @@ export async function introspect(accessToken: AccessToken): Promise<boolean> {
 
 export async function refresh(accessToken: AccessToken): Promise<AccessToken> {
   const response = await axios.post<AccessToken>(
-    tokenEndpoint,
+    TOKEN_END_POINT,
     new URLSearchParams({
       grant_type: 'refresh_token',
-      client_id: clientId,
-      client_secret: clientSecret,
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
       refresh_token: accessToken.refresh_token,
     }),
     {
@@ -128,19 +129,57 @@ export async function refresh(accessToken: AccessToken): Promise<AccessToken> {
       },
     }
   );
-
+  console.log("refresh response", response);
   return response.data;
 }
 
+function isExpiredTime(expiration: number): boolean {
+  return expiration < Date.now();
+}
+
 export function isExpired(accessToken: AccessToken): boolean {
-  const decoded = jwtDecode(accessToken.access_token);
-  const expiration = decoded.exp as number * 1000;
-  return expiration * 1000 < Date.now();
+  const decoded: JwtPayload = jwtDecode(accessToken.access_token);
+  return isExpiredTime(decoded.exp as number * 1000);
 }
 
 export function canRefresh(accessToken: AccessToken): boolean {
   if (!accessToken.refresh_token) {
     return false;
   }
-  return isExpired(accessToken) && !isExpired(accessToken);
+  const decoded: JwtPayload = jwtDecode(accessToken.refresh_token);
+  return !isExpiredTime(decoded.exp as number * 1000);
+}
+
+export async function updateAndLoadAccessToken(ifExpired?: () => void): Promise<AccessToken | null> {
+  const storedToken = loadAccessToken();
+  if (storedToken) {
+    if (!isExpired(storedToken)) {
+      return storedToken;
+    }
+    if (canRefresh(storedToken)) {
+      const refreshedToken = await refresh(storedToken);
+      saveAccessToken(refreshedToken);
+      return refreshedToken;
+    } else {
+      clearAccessToken();
+      ifExpired?.();
+    }
+  }
+  return null;
+}
+
+export function loadAccessToken(): AccessToken | null {
+  const storedToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+  if (storedToken) {
+    return JSON.parse(storedToken) as AccessToken;
+  }
+  return null;
+}
+
+export function saveAccessToken(token: AccessToken) {
+  localStorage.setItem(ACCESS_TOKEN_KEY, JSON.stringify(token));
+}
+
+export function clearAccessToken() {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
 }

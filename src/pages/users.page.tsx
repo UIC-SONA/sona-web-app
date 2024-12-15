@@ -2,6 +2,7 @@ import CrudManager from "@/components/crud-manager.tsx";
 import {Authority, operationUsers, User} from "@/services/user-service.ts";
 import {ColumnDef} from "@tanstack/react-table";
 import {ItemsOnRounded} from "@/components/utils-componentes.tsx";
+import BreadcrumbSubLayout from "@/layout/breadcrumb-sub-layout.tsx";
 
 export default function UsersPage() {
   //
@@ -41,11 +42,14 @@ export default function UsersPage() {
   ];
 
   return (
-    <CrudManager
-      title={"Usuarios"}
-      columns={columns}
-      operations={operationUsers}
-    />
+    <BreadcrumbSubLayout items={["Usuarios"]}>
+      <CrudManager
+        title={"Usuarios"}
+        columns={columns}
+        operations={operationUsers}
+      />
+    </BreadcrumbSubLayout>
+
   );
 }
 

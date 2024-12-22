@@ -1,6 +1,6 @@
 import apiClient from "@/lib/axios.ts";
 import {Message} from "@/lib/types.ts";
-import {CrudOperations, Listable, Page, Pageable, PageQuery, pageQueryToQueryParams} from "@/lib/crud.ts";
+import {CrudOperations, Page, PageQuery, pageQueryToQueryParams} from "@/lib/crud.ts";
 import {Buffer} from "buffer";
 
 export interface Tip {
@@ -18,9 +18,8 @@ export interface TipDto {
   summary: string;
   description: string;
   tags: string[];
-  image: string;
+  image: File | undefined;
   active: boolean;
-  file: File;
 }
 
 const resource = '/content/tips';
@@ -45,43 +44,9 @@ export async function deleteTipImage(id: string): Promise<Message> {
   return response.data;
 }
 
-export async function listActiveTips(): Promise<Tip[]> {
-  const response = await apiClient.get<Tip[]>(
-    `${resource}/active`,
-  );
-
-  return response.data;
-}
-
-export async function pageActiveTips(query: PageQuery): Promise<Page<Tip>> {
-  const response = await apiClient.get<Page<Tip>>(
-    `${resource}/active/page`,
-    {
-      params: pageQueryToQueryParams(query),
-    }
-  );
-
-  return response.data;
-}
-
-
-export async function listTip(search?: string): Promise<Tip[]> {
-  const response = await apiClient.get<Tip[]>(
-    `${resource}`,
-    {
-      params: {
-        search,
-      },
-    }
-  );
-
-  return response.data;
-}
-
-
 export async function pageTip(query: PageQuery): Promise<Page<Tip>> {
   const response = await apiClient.get<Page<Tip>>(
-    `${resource}/page`,
+    `${resource}`,
     {
       params: pageQueryToQueryParams(query),
     }
@@ -127,19 +92,42 @@ export async function existTip(id: string): Promise<boolean> {
   return response.data;
 }
 
+function dtoToFormData(entity: TipDto): FormData {
+  const formData = new FormData();
+  formData.append('title', entity.title);
+  formData.append('summary', entity.summary);
+  formData.append('description', entity.description);
+  formData.append('tags', new Blob([JSON.stringify(entity.tags)], {type: 'application/json'}));
+  if (entity.image) formData.append('image', entity.image);
+  formData.append('active', entity.active.toString());
+  return formData;
+}
+
 export async function createTip(entity: TipDto): Promise<Tip> {
+  const formData = dtoToFormData(entity);
   const response = await apiClient.post<Tip>(
     `${resource}`,
-    entity,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
   );
 
   return response.data;
 }
 
 export async function updateTip(id: string, entity: TipDto): Promise<Tip> {
+  const formData = dtoToFormData(entity);
   const response = await apiClient.put<Tip>(
     `${resource}/${id}`,
-    entity,
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }
   );
 
   return response.data;
@@ -154,7 +142,6 @@ export async function deleteTip(id: string): Promise<void> {
 
 
 export const operationTips: CrudOperations<Tip, TipDto, string> = {
-  list: listTip,
   page: pageTip,
   find: findTip,
   findMany: findManyTip,
@@ -164,8 +151,3 @@ export const operationTips: CrudOperations<Tip, TipDto, string> = {
   update: updateTip,
   delete: deleteTip,
 };
-
-export const operationActiveTips: Listable<Tip> & Pageable<Tip> = {
-  list: listActiveTips,
-  page: pageActiveTips,
-}

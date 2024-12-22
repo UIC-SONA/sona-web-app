@@ -7,6 +7,7 @@ import {
   type PropsWithChildren
 } from 'react';
 import {
+  AccessToken,
   clearAccessToken,
   loadAccessToken,
   login,
@@ -25,7 +26,8 @@ export interface AuthContextState {
   logoutUser: () => Promise<void>;
   initializing: boolean;
   error: ErrorTitle | null;
-  isAuth: boolean;
+  clearError: () => void;
+  authenticated: boolean;
 }
 
 
@@ -33,20 +35,20 @@ export interface AuthContextState {
 export const AuthContext = createContext<AuthContextState | undefined>(undefined);
 
 export default function AuthProvider({children}: Readonly<PropsWithChildren>) {
+
   const [error, setError] = useState<ErrorTitle | null>(null);
   const [initializing, setInitializing] = useState(true);
-  const [isAuth, setIsAuth] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
     const initializeAuth = async () => {
       try {
         const token = await updateAndLoadAccessToken(() => setError({title: 'Sesión expirada', description: 'Por favor, inicia sesión nuevamente'}));
-        if (token) setIsAuth(true);
+        if (token) setAuthenticated(true);
       } catch (error) {
         const err = extractError(error);
         setError(err);
       }
-
       setInitializing(false);
     };
 
@@ -56,13 +58,14 @@ export default function AuthProvider({children}: Readonly<PropsWithChildren>) {
   const loginUser = async (username: string, password: string) => {
     const accessToken = await login(username, password);
     saveAccessToken(accessToken);
-    setIsAuth(true);
+    setAuthenticated(true);
   };
 
   const logoutUser = useCallback(async () => {
     try {
-      const accessToken = loadAccessToken();
+      const accessToken: AccessToken | null = loadAccessToken();
       if (accessToken) await logout(accessToken);
+      setAuthenticated(false);
     } catch (error) {
       const err = extractError(error);
       setError(err);
@@ -76,8 +79,9 @@ export default function AuthProvider({children}: Readonly<PropsWithChildren>) {
     logoutUser,
     initializing,
     error,
-    isAuth
-  }), [error, initializing, isAuth, logoutUser]);
+    clearError: () => setError(null),
+    authenticated
+  }), [error, initializing, authenticated, logoutUser]);
 
   return (
     <AuthContext.Provider value={value}>

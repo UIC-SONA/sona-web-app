@@ -2,8 +2,8 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar.tsx";
-import {AppSidebar} from "@/components/app-sidebar.tsx";
 import {Outlet} from "react-router";
+import {AppSidebar} from "@/components/layout/app-sidebar.tsx";
 
 export default function MainLayout() {
 

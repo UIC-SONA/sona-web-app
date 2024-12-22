@@ -51,10 +51,6 @@ export function defaultPageQuery(size: number = 10): PageQuery {
   };
 }
 
-export type Listable<T> = {
-  list: (search?: string) => Promise<T[]>;
-};
-
 export type Pageable<T> = {
   page: (query: PageQuery) => Promise<Page<T>>;
 };
@@ -73,18 +69,18 @@ export type Existable<ID> = {
 };
 
 export type Creatable<T, D> = {
-  create: (entity: D) => Promise<T>;
+  create: (dto: D) => Promise<T>;
 };
 
 export type Updatable<T extends Entity<ID>, D, ID> = {
-  update: (id: ID, entity: D) => Promise<T>;
+  update: (id: ID, dto: D) => Promise<T>;
 };
 
 export type Deletable<ID> = {
   delete: (id: ID) => Promise<void>;
 };
 
-export type ReadOperations<T extends Entity<ID>, ID> = Findable<T, ID> & Listable<T> & Pageable<T> & Countable & Existable<ID>;
+export type ReadOperations<T extends Entity<ID>, ID> = Findable<T, ID> & Pageable<T> & Countable & Existable<ID>;
 
 export type WriteOperations<T extends Entity<ID>, D, ID> = Creatable<T, D> & Updatable<T, D, ID> & Deletable<ID>;
 
@@ -93,10 +89,6 @@ export type CrudOperations<T extends Entity<ID>, D, ID> = ReadOperations<T, ID> 
 
 export function isPageable<T>(operations: unknown): operations is Pageable<T> {
   return (operations as Pageable<T>).page !== undefined;
-}
-
-export function isListable<T>(operations: unknown): operations is Listable<T> {
-  return (operations as Listable<T>).list !== undefined;
 }
 
 export function isFindable<T extends Entity<ID>, ID>(operations: unknown): operations is Findable<T, ID> {
@@ -124,7 +116,7 @@ export function isDeletable<ID>(operations: unknown): operations is Deletable<ID
 }
 
 export function isReadOperations<T extends Entity<ID>, ID>(operations: unknown): operations is ReadOperations<T, ID> {
-  return isFindable(operations) && isListable(operations) && isPageable(operations) && isCountable(operations) && isExistable(operations);
+  return isFindable(operations) && isPageable(operations) && isCountable(operations) && isExistable(operations);
 }
 
 export function isWriteOperations<T extends Entity<ID>, D, ID>(operations: unknown): operations is WriteOperations<T, D, ID> {

@@ -17,7 +17,7 @@ export interface BradcrumSubLayoutProps extends PropsWithChildren {
 }
 
 export default function BreadcrumbSubLayout({children, items}: Readonly<BradcrumSubLayoutProps>) {
-  return <>x
+  return <>
     <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b">
       <div className="flex items-center gap-2 px-4">
         <SidebarTrigger className="-ml-1"/>
@@ -31,7 +31,7 @@ export default function BreadcrumbSubLayout({children, items}: Readonly<Bradcrum
             </BreadcrumbItem>
             <BreadcrumbSeparator className="hidden md:block"/>
             {items.map((item, index) => {
-              return <Fragment key={index}>
+              return <Fragment key={index + item}>
                 <BreadcrumbItem>
                   <BreadcrumbPage>
                     {item}

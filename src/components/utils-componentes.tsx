@@ -4,16 +4,17 @@ import {CircleX, ImageIcon, Loader2} from "lucide-react";
 import {Dialog, DialogContent, DialogTitle} from "@/components/ui/dialog.tsx";
 import {WithUUID} from "@/lib/crud.ts";
 
-interface OpenImageModalProps {
+interface ImageFetcherProps {
   fetcher: () => Promise<string>;
   alt: string;
 }
 
-export function OpenImageModal({fetcher, alt}: Readonly<OpenImageModalProps>) {
+export function OpenImageModal({fetcher, alt}: Readonly<ImageFetcherProps>) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!imageSrc && open) {
       setLoading(true);
@@ -36,18 +37,47 @@ export function OpenImageModal({fetcher, alt}: Readonly<OpenImageModalProps>) {
       <Button onClick={() => setOpen(true)}>
         <ImageIcon/>
       </Button>
-      {open && <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="sm:max-w-[425px]" aria-describedby={alt}>
-              <DialogTitle>{alt}</DialogTitle>
-              <div className="flex justify-center">
-                {loading && <Loader2 className="animate-spin"/>}
-                {error && <CircleX className="text-red-500"/>}
-                {imageSrc && <img src={imageSrc} alt={alt} className="w-full"/>}
-              </div>
-          </DialogContent>
-      </Dialog>}
-
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-h-[80vh]">
+          <DialogTitle>{alt}</DialogTitle>
+          <div className="flex justify-center">
+            {loading && <Loader2 className="animate-spin"/>}
+            {error && <CircleX className="text-red-500"/>}
+            {imageSrc && <img src={imageSrc} alt={alt} className="w-full"/>}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
+  );
+}
+
+export function LoadingImage({fetcher, alt}: Readonly<ImageFetcherProps>) {
+  const [loading, setLoading] = useState(true);
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!imageSrc) {
+      setLoading(true);
+      setError(null); // Reinicia errores previos
+      setImageSrc(null); // Limpia la imagen previa
+
+      fetcher()
+        .then(setImageSrc)
+        .catch((e) => {
+          console.error(e);
+          setError(e.message);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [fetcher, imageSrc]);
+
+  return (
+    <div className="flex justify-center">
+      {loading && <Loader2 className="animate-spin"/>}
+      {error && <CircleX className="text-red-500"/>}
+      {imageSrc && <img src={imageSrc} alt={alt} className="w-full"/>}
+    </div>
   );
 }
 

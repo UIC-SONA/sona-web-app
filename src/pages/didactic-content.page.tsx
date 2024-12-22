@@ -1,14 +1,7 @@
 import {ColumnDef} from "@tanstack/react-table";
 import {
-  operationTips,
-  Tip,
-  TipDto,
-  tipImage
-} from "@/services/tip-service.ts";
-import {Checkbox} from "@/components/ui/checkbox.tsx";
-import {
   ClickToShowUUID,
-  ItemsOnRounded, LoadingImage,
+  LoadingImage,
   OpenImageModal,
   Truncate
 } from "@/components/utils-componentes.tsx";
@@ -24,12 +17,11 @@ import {
 } from "@/components/ui/form.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import {Textarea} from "@/components/ui/textarea.tsx";
-import MultipleSelector from "@/components/ui/multiple-selector.tsx";
-import {Switch} from "@/components/ui/switch.tsx";
 import {FormDef} from "@/components/crud/crud-forms.tsx";
 import CrudTable from "@/components/crud/crud-table.tsx";
+import {didacticContentImage, DidaticContent, DidaticContentDto, operationDidacticContent} from "@/services/didactic-content-service.ts";
 
-const columns: ColumnDef<Tip>[] = [
+const columns: ColumnDef<DidaticContent>[] = [
   {
     header: "Id",
     accessorKey: "id",
@@ -44,53 +36,32 @@ const columns: ColumnDef<Tip>[] = [
     enableSorting: false,
   },
   {
-    header: "Resumen",
-    accessorKey: "summary",
-    enableSorting: false,
-    cell: ({row}) => {
-      return <Truncate text={row.original.summary}/>
-    }
-  },
-  {
     header: "Descripción",
     accessorKey: "description",
     enableSorting: false,
     cell: ({row}) => {
-      return <Truncate text={row.original.description}/>
-    }
-  },
-  {
-    header: "Tags",
-    accessorKey: "tags",
-    cell: ({row}) => {
-      return <ItemsOnRounded items={row.original.tags}/>
+      return <Truncate text={row.original.content}/>
     }
   },
   {
     header: "Imagen",
     accessorKey: "image",
     cell: ({row}) => {
-      return <OpenImageModal fetcher={() => tipImage(row.original.id)} alt={row.original.title}/>
-    },
-  },
-  {
-    header: "Activo",
-    accessorKey: "active",
-    cell: ({row}) => {
-      return <Checkbox checked={row.original.active} disabled={true}/>
+      return <OpenImageModal
+        key={row.original.image}
+        fetcher={() => didacticContentImage(row.original.id)}
+        alt={row.original.title}
+      />
     },
   },
 ];
 
 
-const form: FormDef<Tip, TipDto, string> = {
+const form: FormDef<DidaticContent, DidaticContentDto, string> = {
   schema: formAction => {
     return z.object({
       title: z.string().nonempty("El título es requerido"),
-      summary: z.string().nonempty("El resumen es requerido"),
-      description: z.string().nonempty("La descripción es requerida"),
-      tags: z.array(z.string()).nonempty("Los tags son requeridos"),
-      active: z.boolean(),
+      content: z.string().nonempty("El contenido es requerido"),
       image: formAction === "create" ? z.instanceof(File) : z.instanceof(File).optional(),
     });
   },
@@ -113,67 +84,13 @@ const form: FormDef<Tip, TipDto, string> = {
         />
         <FormField
           control={control}
-          name="summary"
-          render={({field}) => {
-            return (
-              <FormItem className="lg:col-span-2">
-                <FormLabel>Resumen</FormLabel>
-                <FormControl>
-                  <Input placeholder="Resumen" {...field} />
-                </FormControl>
-                <FormMessage/>
-              </FormItem>
-            );
-          }}
-        />
-        <FormField
-          control={control}
-          defaultValue={false}
-          name="active"
-          render={({field}) => {
-            return (
-              <FormItem className="flex items-center space-x-3 sm:col-span-2 lg:col-span-4">
-                <FormLabel className="m-0">Activo</FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <FormMessage/>
-              </FormItem>
-            );
-          }}
-        />
-        <FormField
-          control={control}
-          name="description"
+          name="content"
           render={({field}) => {
             return (
               <FormItem className="sm:col-span-2 lg:col-span-4">
                 <FormLabel>Descripción</FormLabel>
                 <FormControl>
                   <Textarea placeholder="Descripción" className="resize-none" {...field} />
-                </FormControl>
-                <FormMessage/>
-              </FormItem>
-            );
-          }}
-        />
-        <FormField
-          control={control}
-          name="tags"
-          render={({field}) => {
-            return (
-              <FormItem className="sm:col-span-2 lg:col-span-4">
-                <FormLabel>Tags</FormLabel>
-                <FormControl>
-                  <MultipleSelector
-                    placeholder="Tags"
-                    creatable
-                    value={field.value?.map((tag) => ({label: tag, value: tag}))}
-                    onChange={(tags) => field.onChange(tags.map((tag) => tag.value))}
-                  />
                 </FormControl>
                 <FormMessage/>
               </FormItem>
@@ -202,7 +119,7 @@ const form: FormDef<Tip, TipDto, string> = {
                 </div>
                 <FormMessage/>
                 <div className="mt-4">
-                  {entity && !value && <LoadingImage fetcher={() => tipImage(entity.id)} alt={entity.title}/>}
+                  {entity && !value && <LoadingImage fetcher={() => didacticContentImage(entity.id)} alt={entity.title}/>}
                   {value && <img src={URL.createObjectURL(value)} alt="Preview"/>}
                 </div>
               </FormItem>
@@ -212,29 +129,26 @@ const form: FormDef<Tip, TipDto, string> = {
       </div>
     );
   },
-  getDefaultValue: (data: Tip) => {
+  getDefaultValue: (data: DidaticContent) => {
     return {
       title: data.title,
-      summary: data.summary,
-      description: data.description,
-      tags: data.tags,
-      active: data.active,
+      content: data.content,
     };
   },
 };
 
 
-export default function TipsPage() {
+export default function DidacticContentPage() {
 
   const {authenticated} = useAuth();
   if (!authenticated) return null;
 
   return (
-    <BreadcrumbSubLayout items={["Tips"]}>
-      <CrudTable<Tip, TipDto, string>
-        title={"Tips"}
+    <BreadcrumbSubLayout items={["Contenido Didáctico"]}>
+      <CrudTable<DidaticContent, DidaticContentDto, string>
+        title={"Contenido Didáctico"}
         columns={columns}
-        operations={operationTips}
+        operations={operationDidacticContent}
         form={form}
       />
     </BreadcrumbSubLayout>

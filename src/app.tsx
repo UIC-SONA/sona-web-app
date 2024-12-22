@@ -1,12 +1,13 @@
+import BreadcrumbSubLayout from "@/layout/breadcrumb-sub-layout.tsx";
 
 
 function App() {
 
 
   return (
-    <main className="flex flex-col items-center justify-center h-screen">
-
-    </main>
+    <BreadcrumbSubLayout items={[]}>
+      <h1>App</h1>
+    </BreadcrumbSubLayout>
   );
 }
 

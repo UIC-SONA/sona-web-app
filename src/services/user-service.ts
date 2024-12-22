@@ -2,12 +2,16 @@ import apiClient from "@/lib/axios.ts";
 import {Message} from "@/lib/types.ts";
 import {CrudOperations, Page, PageQuery, pageQueryToQueryParams} from "@/lib/crud.ts";
 
-export interface SingUp {
+
+export interface BaseUser {
   username: string;
-  password: string;
   firstName: string;
   lastName: string;
   email: string;
+}
+
+export interface SingUp extends BaseUser {
+  password: string;
 }
 
 export interface UserRepresentation {
@@ -17,7 +21,7 @@ export interface UserRepresentation {
   lastName: string;
   email: string;
   emailVerified: boolean;
-  Authorities: Authority[];
+  authorities: Authority[];
 }
 
 
@@ -38,14 +42,10 @@ export interface User {
   authorities: Authority[];
 }
 
-export interface UserDto {
-  username: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  emailVerified: boolean;
+export interface UserDto extends BaseUser {
   authoritiesToAdd: Authority[];
   authoritiesToRemove: Authority[];
+  password: string | undefined;
 }
 
 const resource = '/user';
@@ -104,43 +104,9 @@ export async function profile(): Promise<User> {
   return response.data;
 }
 
-export async function listByRole(role: Authority): Promise<User[]> {
-  const response = await apiClient.get<User[]>(
-    `${resource}/role/${role}`,
-  );
-
-  return response.data;
-}
-
-export async function pageByRole(role: Authority, query: PageQuery): Promise<User[]> {
-  const response = await apiClient.get<User[]>(
-    `${resource}/role/${role}/page`,
-    {
-      params: pageQueryToQueryParams(query),
-    }
-  );
-
-  return response.data;
-}
-
-
-export async function listUser(search?: string): Promise<User[]> {
-  const response = await apiClient.get<User[]>(
-    `${resource}`,
-    {
-      params: {
-        search,
-      },
-    }
-  );
-
-  return response.data;
-}
-
-
 export async function pageUser(query: PageQuery): Promise<Page<User>> {
   const response = await apiClient.get<Page<User>>(
-    `${resource}/page`,
+    `${resource}`,
     {
       params: pageQueryToQueryParams(query),
     }
@@ -209,7 +175,6 @@ export async function deleteUser(id: number): Promise<void> {
 
 
 export const operationUsers: CrudOperations<User, UserDto, number> = {
-  list: listUser,
   page: pageUser,
   find: findUser,
   findMany: findManyUser,

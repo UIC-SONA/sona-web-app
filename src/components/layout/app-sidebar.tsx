@@ -1,14 +1,13 @@
 import * as React from "react"
 import {
+  Blocks,
   BookOpen,
   Calendar,
   LoaderCircle,
-  Settings2,
+  Settings2, ThumbsUp,
   UserIcon,
 } from "lucide-react"
 
-import {NavItem, NavMain} from "@/components/nav-main"
-import {NavUser} from "@/components/nav-user"
 import {
   Sidebar,
   SidebarContent,
@@ -25,33 +24,39 @@ import {
   useEffect,
   useState
 } from "react";
-import {profile, User} from "@/services/user-service.ts";
+import {
+  profile,
+  User
+} from "@/services/user-service.ts";
 import {Link} from "react-router";
+import {
+  NavItem,
+  NavMain
+} from "@/components/layout/nav-main.tsx";
+import {NavUser} from "@/components/layout/nav-user.tsx";
 
 
 const navItems: NavItem[] = [
   {
     title: "Usuarios",
-    url: "#",
+    url: "/users",
     icon: UserIcon,
     isActive: true,
-    items: [
-      {
-        title: "Administrar",
-        url: "/users",
-      },
-    ],
   },
   {
     title: "Tips",
-    url: "#",
+    url: "/tips",
     icon: BookOpen,
-    items: [
-      {
-        title: "Administrar",
-        url: "/tips",
-      },
-    ],
+  },
+  {
+    title: "Foros",
+    url: "/forum",
+    icon: ThumbsUp,
+  },
+  {
+    title: "Contenido didáctico",
+    url: "/didactic-content",
+    icon: Blocks,
   },
   {
     title: "Citas",
@@ -69,7 +74,7 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    title: "Settings",
+    title: "Configuración",
     url: "#",
     icon: Settings2,
     items: [

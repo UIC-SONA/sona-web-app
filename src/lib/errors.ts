@@ -1,12 +1,16 @@
 import {isAxiosError} from "axios";
 import {isAccessTokenError} from "@/services/auth-service.ts";
+import {
+  FieldPath,
+  FieldValues
+} from "react-hook-form";
 
 export interface ErrorTitle {
   title: string;
   description: string;
 }
 
-type ProblemDetails<TExtensions = Record<never, never>> = {
+type ProblemDetails<TExtensions = object> = {
   title: string;
   status: number;
   detail: string;
@@ -14,7 +18,7 @@ type ProblemDetails<TExtensions = Record<never, never>> = {
   type: string;
 } & TExtensions;
 
-export function isProblemDetails<TExtensions = Record<never, never>>(
+export function isProblemDetails<TExtensions = object>(
   obj: unknown
 ): obj is ProblemDetails<TExtensions> {
   return (
@@ -33,9 +37,36 @@ export function isProblemDetails<TExtensions = Record<never, never>>(
   );
 }
 
+export type ValidationError = {
+  field: string;
+  messages: string[];
+}
+
+export type ValidationErrorFieldValues<T extends FieldValues, V extends FieldPath<T> = FieldPath<T>> = {
+  field: V;
+  messages: string[];
+}
+
+export function extractProblemDetails(error: unknown): ProblemDetails | undefined {
+  if (!isAxiosError(error)) return;
+
+  const response = error.response;
+  if (!response) return;
+
+  const body = response.data;
+
+  if (isProblemDetails(body)) {
+    return body;
+  }
+}
 
 export function extractError(error: unknown): ErrorTitle {
+  const err = extractOptionalError(error);
+  if (err) return err;
+  return {title: "Error", description: "No se pudo conectar al servidor"};
+}
 
+export function extractOptionalError(error: unknown): ErrorTitle | undefined {
   if (!isAxiosError(error)) {
     return {title: "Error inesperado", description: error?.toString() ?? "No se pudo conectar al servidor"}
   }
@@ -44,6 +75,7 @@ export function extractError(error: unknown): ErrorTitle {
   if (!response) {
     return {title: "Error.", description: "No se pudo conectar al servidor"};
   }
+
   const body = response.data;
 
   if (isProblemDetails(body)) {
@@ -57,5 +89,4 @@ export function extractError(error: unknown): ErrorTitle {
   if (isAccessTokenError(body)) {
     return {title: body.error, description: body.error_description};
   }
-  return {title: "Error", description: body?.toString() ?? "No se pudo conectar al servidor"};
 }

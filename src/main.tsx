@@ -12,6 +12,8 @@ import MainLayout from "@/layout/main-layout.tsx";
 import UsersPage from "@/pages/users.page.tsx";
 import TipsPage from "@/pages/tips.page.tsx";
 import {DialogProvider} from "@/context/dialog-context.tsx";
+import ForumPage from "@/pages/forum.page.tsx";
+import DidacticContentPage from "@/pages/didactic-content.page.tsx";
 
 
 createRoot(document.getElementById('root')!).render(
@@ -25,6 +27,8 @@ createRoot(document.getElementById('root')!).render(
                 <Route index element={<App/>}/>
                 <Route path="users" element={<UsersPage/>}/>
                 <Route path="tips" element={<TipsPage/>}/>
+                <Route path="forum" element={<ForumPage/>}/>
+                <Route path="didactic-content" element={<DidacticContentPage/>}/>
               </Route>
               <Route path="auth" element={<AuthPage/>}>
                 <Route path="login" element={<LoginForm/>}/>

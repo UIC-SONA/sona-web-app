@@ -7,23 +7,24 @@ import {
 import {useAuth} from "@/hooks/use-auth.ts";
 import {
   SVGProps,
-  useEffect
+  useEffect,
+  useLayoutEffect
 } from "react";
 import {cn} from "@/lib/utils.ts";
 import {useAlertDialog} from "@/hooks/use-alert-dialog.ts";
 import {DialogType} from "@/context/dialog-context.tsx";
+import {Button} from "@/components/ui/button.tsx";
 
 
 export default function AuthGuard() {
   const navigate = useNavigate();
   const {pathname} = useLocation();
   const {pushAlertDialog} = useAlertDialog();
-  const {initializing, error, isAuth} = useAuth();
+  const {initializing, error, authenticated, clearError} = useAuth();
 
-
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (initializing) return;
-    if (isAuth) {
+    if (authenticated) {
       if (pathname.startsWith('/auth')) {
         console.log('Already authenticated, redirecting to home');
         navigate('/');
@@ -32,9 +33,7 @@ export default function AuthGuard() {
       console.log('No access token, redirecting to login');
       navigate('/auth/login');
     }
-
-
-  }, [initializing, pathname, navigate, isAuth]);
+  }, [initializing, pathname, navigate, authenticated]);
 
   useEffect(() => {
     if (error) pushAlertDialog({
@@ -43,9 +42,10 @@ export default function AuthGuard() {
       description: error.description,
       onConfirm: () => {
         navigate('/auth/login')
+        clearError();
       }
     });
-  }, [error, navigate, pushAlertDialog]);
+  }, [clearError, error, navigate, pushAlertDialog]);
 
 
   if (initializing) {
@@ -55,6 +55,22 @@ export default function AuthGuard() {
       </div>
       <LoadingSpinner size={32} className="text-primary"/>
       Cargando...
+    </div>
+  }
+
+  if (error) {
+    return <div className="w-screen h-screen flex items-center justify-center flex-col">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle/>
+      </div>
+      <h1>Error de autenticación</h1>
+      <p className="text-center my-4">
+        {error.description}
+      </p>
+      <Button onClick={() => {
+        navigate('/auth/login');
+        clearError();
+      }}/>
     </div>
   }
 

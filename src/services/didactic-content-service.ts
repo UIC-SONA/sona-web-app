@@ -31,7 +31,7 @@ export async function didacticContentImage(id: string): Promise<string> {
 
 export async function pageDidacticContent(query: PageQuery): Promise<Page<DidaticContent>> {
   const response = await apiClient.get<Page<DidaticContent>>(
-    `${resource}`,
+    resource,
     {
       params: pageQueryToQueryParams(query),
     }
@@ -88,7 +88,7 @@ function dtoToFormData(entity: DidaticContentDto): FormData {
 export async function createDidacticContent(entity: DidaticContentDto): Promise<DidaticContent> {
   const formData = dtoToFormData(entity);
   const response = await apiClient.post<DidaticContent>(
-    `${resource}`,
+    resource,
     formData,
     {
       headers: {

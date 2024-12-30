@@ -1,6 +1,6 @@
 import apiClient from "@/lib/axios.ts";
 import {Message} from "@/lib/types.ts";
-import {CrudOperations, Page, PageQuery, pageQueryToQueryParams} from "@/lib/crud.ts";
+import {CrudOperations, FilterOperator, Page, PageQuery, pageQueryToQueryParams, PageQueryWithoutFilter} from "@/lib/crud.ts";
 
 
 export interface BaseUser {
@@ -106,7 +106,7 @@ export async function profile(): Promise<User> {
 
 export async function pageUser(query: PageQuery): Promise<Page<User>> {
   const response = await apiClient.get<Page<User>>(
-    `${resource}`,
+    resource,
     {
       params: pageQueryToQueryParams(query),
     }
@@ -150,7 +150,7 @@ export async function existUser(id: number): Promise<boolean> {
 
 export async function createUser(entity: UserDto): Promise<User> {
   const response = await apiClient.post<User>(
-    `${resource}`,
+    resource,
     entity,
   );
 
@@ -173,6 +173,29 @@ export async function deleteUser(id: number): Promise<void> {
   );
 }
 
+
+export async function pageProfessionals(query: PageQueryWithoutFilter): Promise<Page<User>> {
+
+  const filterQuery: PageQuery = {
+    ...query,
+    filter: [
+      {
+        property: 'role',
+        operator: FilterOperator.EQ,
+        value: Authority.PROFESSIONAL
+      }
+    ]
+  };
+
+  const response = await apiClient.get<Page<User>>(
+    resource,
+    {
+      params: pageQueryToQueryParams(filterQuery),
+    }
+  );
+
+  return response.data;
+}
 
 export const operationUsers: CrudOperations<User, UserDto, number> = {
   page: pageUser,

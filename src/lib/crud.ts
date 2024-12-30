@@ -35,7 +35,31 @@ export enum Direction {
   DESC = "DESC",
 }
 
-export interface PageQuery {
+export enum FilterOperator {
+  EQ = "eq",
+  NE = "ne",
+  GT = "gt",
+  GE = "ge",
+  LT = "lt",
+  LE = "le",
+  IN = "in",
+  NIN = "nin",
+  LIKE = "like",
+  IS_NULL = "isNull",
+  NOT_NULL = "notNull",
+}
+
+export interface Filter {
+  property: string;
+  operator: FilterOperator;
+  value: string;
+}
+
+export interface PageQuery extends PageQueryWithoutFilter {
+  filter?: Filter[];
+}
+
+export interface PageQueryWithoutFilter {
   search?: string;
   page: number;
   size: number;
@@ -143,5 +167,19 @@ export function pageQueryToQueryParams(query: PageQuery): URLSearchParams {
   if (query.direction) {
     params.append("direction", query.direction);
   }
+
+  if (query.filter) {
+    for (const filter of query.filter) {
+      params.append("filter", `${scaped(filter.property)}:${filter.operator}:${scaped(filter.value)}`);
+    }
+  }
+
+
   return params;
+}
+
+function scaped(value: string): string {
+  return value
+    .replace(",", "\\,")
+    .replace(":", "\\:");
 }

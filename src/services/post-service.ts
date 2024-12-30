@@ -10,14 +10,14 @@ export interface Forum extends ByAuthor<number>, Entity<string> {
   content: string;
   likedBy: string[];
   reportedBy: string[];
-  createdAt: Date;
+  createdAt: string;
   comments: Comment[];
 }
 
 export interface Comment extends ByAuthor<number> {
   id: string;
   content: string;
-  createdAt: Date;
+  createdAt: string;
 }
 
 export interface ForumDto {
@@ -30,7 +30,7 @@ const resource = '/forum';
 
 export async function pagePosts(query: PageQuery): Promise<Page<Forum>> {
   const response = await apiClient.get<Page<Forum>>(
-    `${resource}`,
+    resource,
     {
       params: pageQueryToQueryParams(query),
     }

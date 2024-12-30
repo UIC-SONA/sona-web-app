@@ -59,6 +59,17 @@ const navItems: NavItem[] = [
     icon: Blocks,
   },
   {
+    title: "Profesionales",
+    url: "#",
+    icon: UserIcon,
+    items: [
+      {
+        title: "Horarios de atención",
+        url: "/professional-schedules",
+      },
+    ],
+  },
+  {
     title: "Citas",
     url: "#",
     icon: Calendar,

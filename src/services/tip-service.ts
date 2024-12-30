@@ -46,7 +46,7 @@ export async function deleteTipImage(id: string): Promise<Message> {
 
 export async function pageTip(query: PageQuery): Promise<Page<Tip>> {
   const response = await apiClient.get<Page<Tip>>(
-    `${resource}`,
+    resource,
     {
       params: pageQueryToQueryParams(query),
     }
@@ -106,7 +106,7 @@ function dtoToFormData(entity: TipDto): FormData {
 export async function createTip(entity: TipDto): Promise<Tip> {
   const formData = dtoToFormData(entity);
   const response = await apiClient.post<Tip>(
-    `${resource}`,
+    resource,
     formData,
     {
       headers: {

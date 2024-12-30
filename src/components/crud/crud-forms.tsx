@@ -134,6 +134,7 @@ function CommonForm<TData extends Entity<ID>, Dto, ID>(
                   <Button
                     type="button"
                     variant="secondary"
+                    className="mt-3 sm:mt-0"
                   >
                     Cancelar
                   </Button>

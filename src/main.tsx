@@ -14,6 +14,7 @@ import TipsPage from "@/pages/tips.page.tsx";
 import {DialogProvider} from "@/context/dialog-context.tsx";
 import ForumPage from "@/pages/forum.page.tsx";
 import DidacticContentPage from "@/pages/didactic-content.page.tsx";
+import ProfessionalSchedulePage from "@/pages/professional-schendule.page.tsx";
 
 
 createRoot(document.getElementById('root')!).render(
@@ -29,6 +30,7 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="tips" element={<TipsPage/>}/>
                 <Route path="forum" element={<ForumPage/>}/>
                 <Route path="didactic-content" element={<DidacticContentPage/>}/>
+                <Route path="professional-schedules" element={<ProfessionalSchedulePage/>}/>
               </Route>
               <Route path="auth" element={<AuthPage/>}>
                 <Route path="login" element={<LoginForm/>}/>

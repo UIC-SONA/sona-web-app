@@ -13,7 +13,6 @@ import {
   Truncate
 } from "@/components/utils-componentes.tsx";
 import BreadcrumbSubLayout from "@/layout/breadcrumb-sub-layout.tsx";
-import {useAuth} from "@/hooks/use-auth.ts";
 import {z} from "zod";
 import {
   FormControl,
@@ -26,8 +25,9 @@ import {Input} from "@/components/ui/input.tsx";
 import {Textarea} from "@/components/ui/textarea.tsx";
 import MultipleSelector from "@/components/ui/multiple-selector.tsx";
 import {Switch} from "@/components/ui/switch.tsx";
-import {FormDef} from "@/components/crud/crud-forms.tsx";
+import {FormComponentProps, FormDefFactory} from "@/components/crud/crud-forms.tsx";
 import CrudTable from "@/components/crud/crud-table.tsx";
+import {useAuth} from "@/context/auth-context.tsx";
 
 const columns: ColumnDef<Tip>[] = [
   {
@@ -83,8 +83,8 @@ const columns: ColumnDef<Tip>[] = [
 ];
 
 
-const form: FormDef<Tip, TipDto, string> = {
-  schema: formAction => {
+const form: FormDefFactory<Tip, TipDto, string> = {
+  getSchema: formAction => {
     return z.object({
       title: z.string().nonempty("El título es requerido"),
       summary: z.string().nonempty("El resumen es requerido"),
@@ -94,125 +94,17 @@ const form: FormDef<Tip, TipDto, string> = {
       image: formAction === "create" ? z.instanceof(File) : z.instanceof(File).optional(),
     });
   },
-  renderForm: (form, entity) => {
-    const {control} = form;
-    return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <FormField
-          control={control}
-          name="title"
-          render={({field}) => (
-            <FormItem className="lg:col-span-2">
-              <FormLabel>Título</FormLabel>
-              <FormControl>
-                <Input placeholder="Título" {...field} />
-              </FormControl>
-              <FormMessage/>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={control}
-          name="summary"
-          render={({field}) => {
-            return (
-              <FormItem className="lg:col-span-2">
-                <FormLabel>Resumen</FormLabel>
-                <FormControl>
-                  <Input placeholder="Resumen" {...field} />
-                </FormControl>
-                <FormMessage/>
-              </FormItem>
-            );
-          }}
-        />
-        <FormField
-          control={control}
-          defaultValue={false}
-          name="active"
-          render={({field}) => {
-            return (
-              <FormItem className="flex items-center space-x-3 sm:col-span-2 lg:col-span-4">
-                <FormLabel className="m-0">Activo</FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-                <FormMessage/>
-              </FormItem>
-            );
-          }}
-        />
-        <FormField
-          control={control}
-          name="description"
-          render={({field}) => {
-            return (
-              <FormItem className="sm:col-span-2 lg:col-span-4">
-                <FormLabel>Descripción</FormLabel>
-                <FormControl>
-                  <Textarea placeholder="Descripción" className="resize-none" {...field} />
-                </FormControl>
-                <FormMessage/>
-              </FormItem>
-            );
-          }}
-        />
-        <FormField
-          control={control}
-          name="tags"
-          render={({field}) => {
-            return (
-              <FormItem className="sm:col-span-2 lg:col-span-4">
-                <FormLabel>Tags</FormLabel>
-                <FormControl>
-                  <MultipleSelector
-                    placeholder="Tags"
-                    creatable
-                    value={field.value?.map((tag) => ({label: tag, value: tag}))}
-                    onChange={(tags) => field.onChange(tags.map((tag) => tag.value))}
-                  />
-                </FormControl>
-                <FormMessage/>
-              </FormItem>
-            );
-          }}
-        />
-        <FormField
-          control={control}
-          name="image"
-          render={({field}) => {
-            const {value, onChange, ...rest} = field;
-
-            return (
-              <FormItem className="sm:col-span-2 lg:col-span-4 flex flex-col sm:flex-row sm:items-center sm:space-x-4">
-                <div className="flex flex-col w-full space-y-2">
-                  <FormLabel>Imagen</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="file"
-                      onChange={(e) => {
-                        onChange(e.target.files?.[0]);
-                      }}
-                      {...rest}
-                    />
-                  </FormControl>
-                </div>
-                <FormMessage/>
-                <div className="mt-4">
-                  {entity && !value && <LoadingImage fetcher={() => tipImage(entity.id)} alt={entity.title}/>}
-                  {value && <img src={URL.createObjectURL(value)} alt="Preview"/>}
-                </div>
-              </FormItem>
-            );
-          }}
-        />
-      </div>
-    );
-  },
-  getDefaultValue: (data: Tip) => {
+  FormComponent: FormComponent,
+  getDefaultValues: (data?: Tip) => {
+    if (!data) {
+      return {
+        title: "",
+        summary: "",
+        description: "",
+        tags: [],
+        active: true,
+      };
+    }
     return {
       title: data.title,
       summary: data.summary,
@@ -238,5 +130,124 @@ export default function TipsPage() {
         form={form}
       />
     </BreadcrumbSubLayout>
+  );
+}
+
+function FormComponent({form, entity}: Readonly<FormComponentProps<Tip, TipDto>>) {
+  const {control} = form;
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <FormField
+        control={control}
+        name="title"
+        render={({field}) => (
+          <FormItem className="lg:col-span-2">
+            <FormLabel>Título</FormLabel>
+            <FormControl>
+              <Input placeholder="Título" {...field} />
+            </FormControl>
+            <FormMessage/>
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={control}
+        name="summary"
+        render={({field}) => {
+          return (
+            <FormItem className="lg:col-span-2">
+              <FormLabel>Resumen</FormLabel>
+              <FormControl>
+                <Input placeholder="Resumen" {...field} />
+              </FormControl>
+              <FormMessage/>
+            </FormItem>
+          );
+        }}
+      />
+      <FormField
+        control={control}
+        defaultValue={false}
+        name="active"
+        render={({field}) => {
+          return (
+            <FormItem className="flex items-center space-x-3 sm:col-span-2 lg:col-span-4">
+              <FormLabel className="m-0">Activo</FormLabel>
+              <FormControl>
+                <Switch
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <FormMessage/>
+            </FormItem>
+          );
+        }}
+      />
+      <FormField
+        control={control}
+        name="description"
+        render={({field}) => {
+          return (
+            <FormItem className="sm:col-span-2 lg:col-span-4">
+              <FormLabel>Descripción</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Descripción" className="resize-y min-h-32" {...field} />
+              </FormControl>
+              <FormMessage/>
+            </FormItem>
+          );
+        }}
+      />
+      <FormField
+        control={control}
+        name="tags"
+        render={({field}) => {
+          return (
+            <FormItem className="sm:col-span-2 lg:col-span-4">
+              <FormLabel>Tags</FormLabel>
+              <FormControl>
+                <MultipleSelector
+                  placeholder="Tags"
+                  creatable
+                  value={field.value?.map((tag) => ({label: tag, value: tag}))}
+                  onChange={(tags) => field.onChange(tags.map((tag) => tag.value))}
+                />
+              </FormControl>
+              <FormMessage/>
+            </FormItem>
+          );
+        }}
+      />
+      <FormField
+        control={control}
+        name="image"
+        render={({field}) => {
+          const {value, onChange, ...rest} = field;
+
+          return (
+            <FormItem className="sm:col-span-2 lg:col-span-4 flex flex-col sm:flex-row sm:items-center sm:space-x-4">
+              <div className="flex flex-col w-full space-y-2">
+                <FormLabel>Imagen</FormLabel>
+                <FormControl>
+                  <Input
+                    type="file"
+                    onChange={(e) => {
+                      onChange(e.target.files?.[0]);
+                    }}
+                    {...rest}
+                  />
+                </FormControl>
+              </div>
+              <FormMessage/>
+              <div className="mt-4">
+                {entity && !value && <LoadingImage fetcher={() => tipImage(entity.id)} alt={entity.title}/>}
+                {value && <img src={URL.createObjectURL(value)} alt="Preview"/>}
+              </div>
+            </FormItem>
+          );
+        }}
+      />
+    </div>
   );
 }

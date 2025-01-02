@@ -1,5 +1,5 @@
 import apiClient from "@/lib/axios.ts";
-import {CrudOperations, Entity, Page, PageQuery, pageQueryToQueryParams} from "@/lib/crud.ts";
+import {CrudOperations, Entity, Page, PageQuery, pageQueryToParams} from "@/lib/crud.ts";
 import {User} from "@/services/user-service.ts";
 
 export interface ProfessionalSchedule extends Entity<number> {
@@ -22,7 +22,7 @@ export async function pageProfessionalSchedule(query: PageQuery): Promise<Page<P
   const response = await apiClient.get<Page<ProfessionalSchedule>>(
     resource,
     {
-      params: pageQueryToQueryParams(query),
+      params: pageQueryToParams(query),
     }
   );
 
@@ -88,6 +88,20 @@ export async function deleteProfessionalSchedule(id: number): Promise<void> {
   await apiClient.delete<void>(
     `${resource}/${id}`,
   );
+}
+
+export async function getSchedulesByProfessionalId(professionalId: number, from: Date, to: Date): Promise<ProfessionalSchedule[]> {
+  const response = await apiClient.get<ProfessionalSchedule[]>(
+    `${resource}/professional/${professionalId}`,
+    {
+      params: {
+        from: from.toISOString().split('T')[0],
+        to: to.toISOString().split('T')[0],
+      },
+    }
+  );
+
+  return response.data;
 }
 
 

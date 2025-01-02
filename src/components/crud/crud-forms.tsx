@@ -1,19 +1,27 @@
 import {
-  DefaultValues, FieldPath, useForm,
+  DefaultValues,
+  GlobalError,
+  useForm,
   UseFormReturn
 } from "react-hook-form";
 import {z} from "zod";
-import {Dispatch, ReactNode, SetStateAction, useEffect, useMemo, useState} from "react";
+import {
+  ComponentType,
+  Dispatch,
+  ReactNode,
+  SetStateAction,
+  useEffect,
+  useState
+} from "react";
 import {Entity} from "@/lib/crud.ts";
 import {CrudSchema} from "@/components/crud/crud-common.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {
-  Loader2,
+  LoaderCircle,
   SaveIcon,
   TrashIcon
 } from "lucide-react";
 import {
-  ErrorTitle,
   extractError,
   extractProblemDetails,
   ValidationError
@@ -38,73 +46,276 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from "@/components/ui/alert-dialog.tsx";
-import {isAxiosError} from "axios";
+import {useToast} from "@/hooks/use-toast.ts";
 
 type FormAction = "create" | "update";
+type InferedSchema<Dto> = z.infer<CrudSchema<Dto>>;
+type UseFormReturnWithSchema<Dto> = UseFormReturn<InferedSchema<Dto>>;
 
-type RenderForm<TData, Dto> = (form: UseFormReturn<z.infer<CrudSchema<Dto>>>, entity?: TData) => ReactNode;
+
+export type FormComponentProps<TData, Dto, Extensions = {}> = {
+  form: UseFormReturnWithSchema<Dto>,
+  entity?: TData;
+} & Extensions;
+
+
+export interface FormDefFactory<TData extends Entity<ID>, Dto, ID> {
+  getSchema: (formAction: FormAction) => CrudSchema<Dto>,
+  getDefaultValues: (data?: TData) => DefaultValues<InferedSchema<Dto>>,
+  FormComponent: ComponentType<FormComponentProps<TData, Dto>>,
+}
 
 export interface FormDef<TData extends Entity<ID>, Dto, ID> {
-  schema: (formAction: FormAction) => CrudSchema<Dto>,
-  renderForm: RenderForm<TData, Dto>,
-  getDefaultValue: (data: TData) => DefaultValues<z.infer<CrudSchema<Dto>>>,
+  schema: CrudSchema<Dto>,
+  defaultValues: DefaultValues<InferedSchema<Dto>>,
+  FormComponent: ComponentType<FormComponentProps<TData, Dto>>,
 }
+
 
 interface BaseFormProps {
-  isOpen: boolean,
-  setIsOpen: Dispatch<SetStateAction<boolean>>,
-  reload: () => void,
+  open: boolean,
+  setOpen: Dispatch<SetStateAction<boolean>>,
+  onSuccess?: () => void,
+  onCancel?: () => void,
+  onCloseErrorDialog?: () => void,
+  title?: ReactNode,
+  description?: ReactNode,
+  toastAction?: { title: string, description: string },
 }
 
-interface CommonFormProps<TData extends Entity<ID>, Dto, ID> extends BaseFormProps {
-  title: ReactNode,
-  description: ReactNode,
+interface CommonFormProps<TData extends Entity<ID>, Dto, ID> extends BaseFormPropsMutate<TData, Dto, ID> {
   onSubmitAction: (data: Dto) => Promise<TData>,
-  form: UseFormReturn<z.infer<CrudSchema<Dto>>>,
-  renderForm: RenderForm<TData, Dto>,
+  entity?: TData,
+}
+
+
+interface BaseFormPropsMutate<TData extends Entity<ID>, Dto, ID> extends BaseFormProps {
+  form: FormDef<TData, Dto, ID>,
+  onSuccessResult?: (entity: TData) => void,
+}
+
+
+export interface CreateFormProps<TData extends Entity<ID>, Dto, ID> extends BaseFormPropsMutate<TData, Dto, ID> {
+  create: (data: Dto) => Promise<TData>,
+}
+
+interface UpdateFormProps<TData extends Entity<ID>, Dto, ID> extends BaseFormPropsMutate<TData, Dto, ID> {
+  entity: TData,
+  update: (id: ID, data: Dto) => Promise<TData>,
+}
+
+export async function dispatchSubmitAction(form: UseFormReturn<any>, action: () => Promise<void>) {
+  try {
+    await action();
+  } catch (error) {
+    const problemDetails = extractProblemDetails(error);
+
+    if (problemDetails) {
+      if ('errors' in problemDetails) {
+        const errors = problemDetails.errors as ValidationError[];
+        for (const error of errors) {
+          const field = error.field.replace("update.dto.", "");
+          const message = error.messages.join(', ')
+          console.log(field, message);
+          form.setError(field, {message});
+        }
+        return;
+      }
+      form.setError("root.requestError", {
+        type: problemDetails.title,
+        message: problemDetails.detail,
+      });
+      throw error;
+    }
+  }
 }
 
 function CommonForm<TData extends Entity<ID>, Dto, ID>(
   {
-    isOpen,
-    setIsOpen,
-    reload,
+    open,
+    setOpen,
+    onSuccess,
     title,
     description,
     onSubmitAction,
-    form,
-    renderForm,
+    onSuccessResult,
+    onCloseErrorDialog,
+    form: {
+      schema,
+      defaultValues,
+      FormComponent,
+    },
+    entity,
+    toastAction,
+    onCancel,
   }: Readonly<CommonFormProps<TData, Dto, ID>>
 ) {
+
+
+  const {toast} = useToast();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<ErrorTitle | null>(null);
+
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
+    defaultValues: defaultValues,
+  });
+
+  useEffect(() => {
+    form.reset(defaultValues);
+  }, [defaultValues, form, open]);
 
   async function onSubmit(values: z.infer<CrudSchema<Dto>>) {
     console.log(values);
     setLoading(true);
     try {
-      await onSubmitAction(values as Dto);
-      reload();
-      setIsOpen(false);
-    } catch (error) {
-      if (isAxiosError(error)) {
-        console.log(error.response);
-      }
-      const problemDetails = extractProblemDetails(error);
+      await dispatchSubmitAction(form, async () => {
+        const result = await onSubmitAction(values as Dto);
+        onSuccessResult?.(result);
+        onSuccess?.();
+        setOpen(false);
+        toastAction && toast(toastAction);
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
 
-      if (problemDetails) {
-        if ('errors' in problemDetails) {
-          const errors = problemDetails.errors as ValidationError[];
-          for (const error of errors) {
-            const field = error.field.replace("update.dto.", "") as FieldPath<z.infer<CrudSchema<Dto>>>
-            const message = error.messages.join(', ')
-            console.log(field, message);
-            form.setError(field, {message});
-          }
-          return;
-        }
-        setError({title: problemDetails.title, description: problemDetails.detail});
-      }
+  const onOpenChange = (open: boolean) => {
+    if (loading) return;
+    setOpen(open);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
+      <DialogContent
+        className="max-w-[80vw] max-h-[80vh] overflow-y-auto"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <RequestErrorFormAlertDialog
+              form={form}
+              onClose={onCloseErrorDialog}
+            />
+            <DialogHeader className="mb-5">
+              <DialogTitle className="text-2xl font-bold">
+                {title}
+              </DialogTitle>
+              <DialogDescription>
+                {description}
+              </DialogDescription>
+            </DialogHeader>
+            <FormComponent form={form} entity={entity}/>
+            <DialogFooter className="justify-end mt-4">
+              <DialogClose asChild>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="mt-3 sm:mt-0"
+                  onClick={() => {
+                    onCancel?.();
+                  }}
+                >
+                  Cancelar
+                </Button>
+              </DialogClose>
+              <Button type="submit">
+                {loading ? <LoaderCircle className="animate-spin"/> : <SaveIcon/>}
+                Guardar
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function CreateForm<TData extends Entity<ID>, Dto, ID>(
+  {
+    create,
+    title,
+    description,
+    toastAction,
+    ...props
+  }: Readonly<CreateFormProps<TData, Dto, ID>>
+) {
+  return (
+    <CommonForm
+      title={title || "Crear"}
+      description={description || "Ingresa los datos del nuevo registro"}
+      onSubmitAction={create}
+      toastAction={toastAction || {title: "Registro creado", description: "El registro se ha creado correctamente"}}
+      {...props}
+    />
+  );
+}
+
+
+export function UpdateForm<TData extends Entity<ID>, Dto, ID>(
+  {
+    entity,
+    update,
+    title,
+    description,
+    toastAction,
+    ...props
+  }: Readonly<UpdateFormProps<TData, Dto, ID>>
+) {
+
+  return (
+    <CommonForm
+      title={title || "Editar"}
+      description={description || "Modifica los datos del registro"}
+      onSubmitAction={(data) => update(entity.id, data)}
+      entity={entity}
+      toastAction={toastAction || {title: "Registro actualizado", description: "El registro se ha actualizado correctamente"}}
+      {...props}
+    />
+  );
+}
+
+
+interface DeleteFormProps<TData extends Entity<ID>, ID> extends BaseFormProps {
+  entity?: TData,
+  delete: (id: ID) => Promise<void>,
+}
+
+export function DeleteForm<TData extends Entity<ID>, ID>(
+  {
+    open,
+    setOpen,
+    onSuccess,
+    onCloseErrorDialog,
+    entity,
+    title,
+    description,
+    toastAction,
+    delete: deleteCb,
+  }: Readonly<DeleteFormProps<TData, ID>>
+) {
+
+  const {toast} = useToast();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<GlobalError | undefined>();
+
+  const deleteHandle = async () => {
+
+    if (!entity) {
+      console.warn("Entity is undefined");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      await deleteCb(entity.id);
+      onSuccess?.();
+      setOpen(false);
+      toast(toastAction || {title: "Registro eliminado", description: "El registro se ha eliminado correctamente"});
+    } catch (error) {
+      const err = extractError(error);
+      setError({type: err.title, message: err.description});
     } finally {
       setLoading(false);
     }
@@ -112,176 +323,19 @@ function CommonForm<TData extends Entity<ID>, Dto, ID>(
 
   return (
     <>
-      <ErrorAlertDialog error={error} onClear={() => setError(null)}/>
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent
-          className="max-w-[80vw] max-h-[80vh] overflow-y-auto"
-          onInteractOutside={(e) => e.preventDefault()}
-        >
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <DialogHeader className="mb-5">
-                <DialogTitle className="text-2xl font-bold">
-                  {title}
-                </DialogTitle>
-                <DialogDescription>
-                  {description}
-                </DialogDescription>
-              </DialogHeader>
-              {renderForm(form)}
-              <DialogFooter className="justify-end mt-4">
-                <DialogClose asChild>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="mt-3 sm:mt-0"
-                  >
-                    Cancelar
-                  </Button>
-                </DialogClose>
-                <Button type="submit">
-                  {loading ? <Loader2 className="animate-spin"/> : <SaveIcon/>}
-                  Guardar
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
-
-interface BaseFormPropsWithDef<TData extends Entity<ID>, Dto, ID> extends BaseFormProps {
-  form: FormDef<TData, Dto, ID>,
-}
-
-export interface CreateFormProps<TData extends Entity<ID>, Dto, ID> extends BaseFormPropsWithDef<TData, Dto, ID> {
-  create: (data: Dto) => Promise<TData>,
-}
-
-export function CreateForm<TData extends Entity<ID>, Dto, ID>(
-  {
-    isOpen,
-    setIsOpen,
-    reload,
-    create,
-    form: {
-      schema,
-      renderForm,
-    },
-  }: Readonly<CreateFormProps<TData, Dto, ID>>
-) {
-  const zodObject = useMemo(() => schema("create"), [schema]);
-  const form = useForm<z.infer<typeof zodObject>>({
-    resolver: zodResolver(zodObject),
-  });
-
-  useEffect(() => {
-    if (!isOpen) {
-      form.reset();
-    }
-  }, [form, isOpen]);
-
-  return (
-    <CommonForm
-      isOpen={isOpen}
-      setIsOpen={setIsOpen}
-      reload={reload}
-      title="Crear"
-      description="Ingresa los datos del nuevo registro"
-      onSubmitAction={create}
-      form={form}
-      renderForm={renderForm}
-    />
-  );
-}
-
-
-interface UpdateFormProps<TData extends Entity<ID>, Dto, ID> extends BaseFormPropsWithDef<TData, Dto, ID> {
-  entity: TData,
-  update: (id: ID, data: Dto) => Promise<TData>,
-}
-
-export function UpdateForm<TData extends Entity<ID>, Dto, ID>(
-  {
-    isOpen,
-    setIsOpen,
-    reload,
-    entity,
-    update,
-    form: {
-      schema,
-      renderForm,
-      getDefaultValue
-    },
-  }: Readonly<UpdateFormProps<TData, Dto, ID>>
-) {
-
-  const defaultValues = useMemo(() => getDefaultValue(entity), [entity, getDefaultValue]);
-  const zodObject = useMemo(() => schema("update"), [schema]);
-  const form: UseFormReturn<z.infer<CrudSchema<Dto>>> = useForm<z.infer<typeof zodObject>>({
-    resolver: zodResolver(zodObject),
-    defaultValues: defaultValues,
-  });
-
-  useEffect(() => {
-    form.reset(defaultValues);
-  }, [defaultValues, form, isOpen]);
-
-  return (
-    <CommonForm
-      isOpen={isOpen}
-      setIsOpen={setIsOpen}
-      reload={reload}
-      title="Editar"
-      description="Modifica los datos del registro"
-      onSubmitAction={(data) => update(entity.id, data)}
-      form={form}
-      renderForm={(form) => renderForm(form, entity)}
-    />
-  );
-}
-
-interface DeleteFormProps<TData extends Entity<ID>, ID> extends BaseFormProps {
-  entity: TData,
-  delete: (id: ID) => Promise<void>,
-}
-
-export function DeleteForm<TData extends Entity<ID>, ID>(
-  {
-    isOpen,
-    setIsOpen,
-    reload,
-    entity,
-    delete: delete_,
-  }: Readonly<DeleteFormProps<TData, ID>>
-) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<ErrorTitle | null>(null);
-
-  function deleteHandle() {
-    setLoading(true);
-    delete_(entity.id)
-      .then(() => {
-        reload();
-        setIsOpen(false);
-      })
-      .catch((error) => {
-        const err = extractError(error);
-        setError(err);
-      })
-  }
-
-  return (
-    <>
-      <ErrorAlertDialog error={error} onClear={() => setError(null)}/>
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <ErrorAlertDialog
+        error={error}
+        crearError={() => setError(undefined)}
+        onClose={onCloseErrorDialog}
+      />
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Eliminar</DialogTitle>
+            <DialogTitle>
+              {title || "Eliminar"}
+            </DialogTitle>
             <DialogDescription>
-              ¿Seguro que deseas eliminar este registro? Esta acción no se puede deshacer.
+              {description || "¿Seguro que deseas eliminar este registro? Esta acción no se puede deshacer."}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="justify-end mt-4">
@@ -295,7 +349,7 @@ export function DeleteForm<TData extends Entity<ID>, ID>(
               </Button>
             </DialogClose>
             <Button onClick={deleteHandle}>
-              {loading ? <Loader2 className="animate-spin"/> : <TrashIcon/>}
+              {loading ? <LoaderCircle className="animate-spin"/> : <TrashIcon/>}
               Eliminar
             </Button>
           </DialogFooter>
@@ -305,19 +359,42 @@ export function DeleteForm<TData extends Entity<ID>, ID>(
   );
 }
 
-interface ErrorAlertDialogProps {
-  error: ErrorTitle | null,
-  onClear: () => void,
+
+export function RequestErrorFormAlertDialog({form, onClose}: Readonly<{ form: UseFormReturn<any>, onClose?: () => void }>) {
+
+  const requestError = form.formState.errors.root?.["requestError"];
+  return (
+    <ErrorAlertDialog
+      error={requestError}
+      crearError={() => form.clearErrors("root.requestError")}
+      onClose={onClose}
+    />
+  );
 }
 
-function ErrorAlertDialog({error, onClear}: Readonly<ErrorAlertDialogProps>) {
+interface ErrorAlertDialogProps {
+  error?: GlobalError,
+  crearError: () => void,
+  onClose?: () => void,
+}
+
+
+export function ErrorAlertDialog({error, crearError, onClose}: Readonly<ErrorAlertDialogProps>) {
   return (
-    <AlertDialog open={error !== null} onOpenChange={(open) => !open && onClear()}>
+    <AlertDialog
+      open={!!error}
+      onOpenChange={(open) => {
+        if (!open) {
+          crearError();
+        }
+        onClose?.();
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Error</AlertDialogTitle>
           <AlertDialogDescription>
-            {error?.description}
+            {error?.message}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

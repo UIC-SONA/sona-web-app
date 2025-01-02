@@ -1,4 +1,11 @@
-import {Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle} from "@/components/ui/card.tsx";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card.tsx";
 import onlyLogo from "@/assets/only_logo.png";
 import {Input} from "@/components/ui/input.tsx";
 import {Button} from "@/components/ui/button.tsx";
@@ -6,10 +13,16 @@ import {Loader2, LockIcon, Mail, UserIcon} from "lucide-react";
 import {Link} from "react-router";
 import {FormEvent, useState} from "react";
 import {singUp} from "@/services/user-service.ts";
-import {AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,} from "@/components/ui/alert-dialog.tsx";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog.tsx";
 import {extractError} from "@/lib/errors.ts";
-import {useAlertDialog} from "@/hooks/use-alert-dialog.ts";
-import {DialogType} from "@/context/dialog-context.tsx";
+import {DialogType, useAlertDialog} from "@/context/alert-dialog-context.tsx";
 
 
 export default function SingUpForm() {

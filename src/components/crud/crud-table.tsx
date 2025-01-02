@@ -33,8 +33,7 @@ import {
   ChevronsUpDownIcon,
   EditIcon,
   EllipsisVerticalIcon,
-  EyeIcon,
-  Loader2,
+  EyeIcon, LoaderCircle,
   PlusIcon,
   SearchIcon,
   TrashIcon,
@@ -51,13 +50,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
-import {useAlertDialog} from "@/hooks/use-alert-dialog.ts";
-import {DialogType} from "@/context/dialog-context.tsx";
+import {DialogType, useAlertDialog} from "@/context/alert-dialog-context.tsx";
 import {
   extractError,
 } from "@/lib/errors.ts";
 import {useIsFirstRender} from "@/hooks/use-is-first-rendered.ts";
-import {CreateForm, DeleteForm, FormDef, UpdateForm} from "@/components/crud/crud-forms.tsx";
+import {CreateForm, DeleteForm, FormDefFactory, UpdateForm} from "@/components/crud/crud-forms.tsx";
 
 const perPage = [5, 10, 25, 50, 100];
 
@@ -66,7 +64,7 @@ export type CrudTableProps<TData extends Entity<ID>, Dto, ID> = {
   title: string;
   operations: Partial<CrudOperations<TData, Dto, ID>>;
   columns: ColumnDef<TData>[];
-  form?: FormDef<TData, Dto, ID>;
+  form?: FormDefFactory<TData, Dto, ID>;
 }
 
 export default function CrudTable<TData extends Entity<ID>, Dto, ID>({title, columns, operations, form}: Readonly<CrudTableProps<TData, Dto, ID>>) {
@@ -81,7 +79,7 @@ export default function CrudTable<TData extends Entity<ID>, Dto, ID>({title, col
 interface CrudOperationsTableProp<TData extends Entity<ID>, Dto, ID> extends Partial<CrudOperations<TData, Dto, ID>> {
   title: string;
   columns: ColumnDef<TData>[];
-  form?: FormDef<TData, Dto, ID>;
+  form?: FormDefFactory<TData, Dto, ID>;
 }
 
 function CrudOperationsTable<TData extends Entity<ID>, Dto, ID>(
@@ -227,10 +225,10 @@ function CrudOperationsTable<TData extends Entity<ID>, Dto, ID>(
               })
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell colSpan={columns.length + (useFormInTable ? 1 : 0)} className="h-24 text-center">
                   {isFirstRender ? (
                     <div className="flex items-center justify-center space-x-2 flex-col">
-                      <Loader2 className="animate-spin"/>
+                      <LoaderCircle className="animate-spin"/>
                       Cargando...
                     </div>
                   ) : (
@@ -255,7 +253,7 @@ function CrudOperationsTable<TData extends Entity<ID>, Dto, ID>(
                     disabled={pageData.page.number === 0 || loading}
                 >
                   {loadingBackPagination
-                    ? <Loader2 className="animate-spin"/>
+                    ? <LoaderCircle className="animate-spin"/>
                     : <ChevronLeft/>
                   }
                 </Button>
@@ -266,7 +264,7 @@ function CrudOperationsTable<TData extends Entity<ID>, Dto, ID>(
                     disabled={pageData.page.number === pageData.page.totalPages - 1 || loading}
                 >
                   {loadingNextPagination
-                    ? <Loader2 className="animate-spin"/>
+                    ? <LoaderCircle className="animate-spin"/>
                     : <ChevronRight/>
                   }
                 </Button>
@@ -318,7 +316,7 @@ function IntelliSearch({value, onSearch, loading, className}: Readonly<IntelliSe
         />
         <SearchIcon className="absolute top-1/2 left-3 transform -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
         <div className="absolute top-1/2 right-3 transform -translate-y-1/2 h-5 w-5 text-muted-foreground">
-          {loading && <Loader2 className="animate-spin"/>}
+          {loading && <LoaderCircle className="animate-spin"/>}
         </div>
       </div>
     </div>
@@ -339,7 +337,7 @@ function DropdownPerPage({pageSize, onPageSizeChange, loading, className}: Reado
         <div className="flex items-center">
           <Button variant="outline" className="ml-4">
             Por página {pageSize}
-            {loading ? <Loader2 className="animate-spin"/> : <ChevronsUpDownIcon/>}
+            {loading ? <LoaderCircle className="animate-spin"/> : <ChevronsUpDownIcon/>}
           </Button>
         </div>
       </DropdownMenuTrigger>
@@ -393,7 +391,7 @@ function DropdownVisibleColumns<TData>({table, className}: Readonly<DropdownVisi
 
 interface EntityActionsProps<TData extends Entity<ID>, Dto, ID> {
   entity: TData,
-  form?: FormDef<TData, Dto, ID>,
+  form?: FormDefFactory<TData, Dto, ID>,
   reload: () => void,
   delete?: (id: ID) => Promise<void>,
   update?: (id: ID, data: Dto) => Promise<TData>,
@@ -404,7 +402,7 @@ function EntityActions<TData extends Entity<ID>, Dto, ID>(
     entity,
     form,
     reload,
-    delete: delete_,
+    delete: deleteCb,
     update
   }: Readonly<EntityActionsProps<TData, Dto, ID>>) {
 
@@ -426,23 +424,27 @@ function EntityActions<TData extends Entity<ID>, Dto, ID>(
 
   return (
     <>
-      {canUpdate && (
+      {canUpdate && form && (
         <UpdateForm
-          isOpen={isUpdateOpen}
-          setIsOpen={setIsUpdateOpen}
-          reload={reload}
+          open={isUpdateOpen}
+          setOpen={setIsUpdateOpen}
+          onSuccess={reload}
           entity={entity}
           update={update}
-          form={form}
+          form={{
+            defaultValues: form.getDefaultValues(entity),
+            schema: form.getSchema("update"),
+            FormComponent: form.FormComponent,
+          }}
         />
       )}
-      {delete_ && (
+      {deleteCb && (
         <DeleteForm
-          isOpen={isDeleteOpen}
-          setIsOpen={setIsDeleteOpen}
-          reload={reload}
+          open={isDeleteOpen}
+          setOpen={setIsDeleteOpen}
+          onSuccess={reload}
           entity={entity}
-          delete={delete_}
+          delete={deleteCb}
         />
       )}
       <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
@@ -460,7 +462,7 @@ function EntityActions<TData extends Entity<ID>, Dto, ID>(
               Actualizar
             </DropdownMenuItem>
           )}
-          {delete_ && (
+          {deleteCb && (
             <DropdownMenuItem onSelect={handleDeleteClick}>
               <TrashIcon/>
               Eliminar
@@ -473,7 +475,7 @@ function EntityActions<TData extends Entity<ID>, Dto, ID>(
 }
 
 interface CreateActionProps<TData extends Entity<ID>, Dto, ID> {
-  form: FormDef<TData, Dto, ID>,
+  form: FormDefFactory<TData, Dto, ID>,
   create: (data: Dto) => Promise<TData>,
   reload: () => void,
 }
@@ -489,11 +491,15 @@ function CreateAction<TData extends Entity<ID>, Dto, ID>(
   return (
     <>
       <CreateForm
-        isOpen={isOpen}
-        setIsOpen={setIsOpen}
-        reload={reload}
+        open={isOpen}
+        setOpen={setIsOpen}
+        onSuccess={reload}
         create={create}
-        form={form}
+        form={{
+          defaultValues: form.getDefaultValues(),
+          schema: form.getSchema("create"),
+          FormComponent: form.FormComponent,
+        }}
       />
       <Button onClick={() => setIsOpen(true)}>
         <PlusIcon/>

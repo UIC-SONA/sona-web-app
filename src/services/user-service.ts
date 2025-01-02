@@ -1,6 +1,11 @@
 import apiClient from "@/lib/axios.ts";
 import {Message} from "@/lib/types.ts";
-import {CrudOperations, FilterOperator, Page, PageQuery, pageQueryToQueryParams, PageQueryWithoutFilter} from "@/lib/crud.ts";
+import {
+  CrudOperations,
+  Page,
+  PageQuery,
+  pageQueryToParams
+} from "@/lib/crud.ts";
 
 
 export interface BaseUser {
@@ -14,21 +19,10 @@ export interface SingUp extends BaseUser {
   password: string;
 }
 
-export interface UserRepresentation {
-  id: number;
-  username: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  emailVerified: boolean;
-  authorities: Authority[];
-}
-
 
 export enum Authority {
   ADMIN = "ADMIN",
   ADMINISTRATIVE = "ADMINISTRATIVE",
-  PROFESSIONAL = "PROFESSIONAL",
   MEDICAL_PROFESSIONAL = "MEDICAL_PROFESSIONAL",
   LEGAL_PROFESSIONAL = "LEGAL_PROFESSIONAL",
   USER = "USER",
@@ -38,7 +32,10 @@ export interface User {
   id: number;
   keycloakId: string;
   profilePicturePath: string;
-  representation: UserRepresentation;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
   authorities: Authority[];
 }
 
@@ -47,6 +44,12 @@ export interface UserDto extends BaseUser {
   authoritiesToRemove: Authority[];
   password: string | undefined;
 }
+
+
+export interface UserFilter {
+  authorities?: Authority[];
+}
+
 
 const resource = '/user';
 
@@ -104,11 +107,11 @@ export async function profile(): Promise<User> {
   return response.data;
 }
 
-export async function pageUser(query: PageQuery): Promise<Page<User>> {
+export async function pageUser(query: PageQuery<UserFilter>): Promise<Page<User>> {
   const response = await apiClient.get<Page<User>>(
     resource,
     {
-      params: pageQueryToQueryParams(query),
+      params: pageQueryToParams(query),
     }
   );
 
@@ -171,30 +174,6 @@ export async function deleteUser(id: number): Promise<void> {
   await apiClient.delete<void>(
     `${resource}/${id}`,
   );
-}
-
-
-export async function pageProfessionals(query: PageQueryWithoutFilter): Promise<Page<User>> {
-
-  const filterQuery: PageQuery = {
-    ...query,
-    filter: [
-      {
-        property: 'role',
-        operator: FilterOperator.EQ,
-        value: Authority.PROFESSIONAL
-      }
-    ]
-  };
-
-  const response = await apiClient.get<Page<User>>(
-    resource,
-    {
-      params: pageQueryToQueryParams(filterQuery),
-    }
-  );
-
-  return response.data;
 }
 
 export const operationUsers: CrudOperations<User, UserDto, number> = {

@@ -1,4 +1,3 @@
-import {useAuth} from "@/hooks/use-auth.ts";
 import BreadcrumbSubLayout from "@/layout/breadcrumb-sub-layout.tsx";
 import CrudTable from "@/components/crud/crud-table.tsx";
 import {
@@ -13,6 +12,7 @@ import {
   ClickToShowUUID,
   Truncate
 } from "@/components/utils-componentes.tsx";
+import {useAuth} from "@/context/auth-context.tsx";
 
 
 const columns: ColumnDef<Forum>[] = [
@@ -33,7 +33,7 @@ const columns: ColumnDef<Forum>[] = [
     }
   },
   {
-    header: "Subido",
+    header: "Publicado",
     accessorKey: "createdAt",
     cell: ({row}) => {
       return new Date(row.original.createdAt).toLocaleString();

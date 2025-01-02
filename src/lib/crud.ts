@@ -30,42 +30,15 @@ export function emptyPage<T>(): Page<T> {
   };
 }
 
-export enum Direction {
-  ASC = "ASC",
-  DESC = "DESC",
-}
+export type Direction = "ASC" | "DESC";
 
-export enum FilterOperator {
-  EQ = "eq",
-  NE = "ne",
-  GT = "gt",
-  GE = "ge",
-  LT = "lt",
-  LE = "le",
-  IN = "in",
-  NIN = "nin",
-  LIKE = "like",
-  IS_NULL = "isNull",
-  NOT_NULL = "notNull",
-}
-
-export interface Filter {
-  property: string;
-  operator: FilterOperator;
-  value: string;
-}
-
-export interface PageQuery extends PageQueryWithoutFilter {
-  filter?: Filter[];
-}
-
-export interface PageQueryWithoutFilter {
+export type PageQuery<E = {}> = {
   search?: string;
   page: number;
   size: number;
   properties?: string[];
   direction?: Direction;
-}
+} & E;
 
 export function defaultPageQuery(size: number = 10): PageQuery {
   return {
@@ -152,7 +125,7 @@ export function isCrudOperations<T extends Entity<ID>, D, ID>(operations: unknow
 }
 
 
-export function pageQueryToQueryParams(query: PageQuery): URLSearchParams {
+export function pageQueryToParams(query: PageQuery): URLSearchParams {
   const params = new URLSearchParams();
   params.append("page", query.page.toString());
   params.append("size", query.size.toString());
@@ -168,18 +141,25 @@ export function pageQueryToQueryParams(query: PageQuery): URLSearchParams {
     params.append("direction", query.direction);
   }
 
-  if (query.filter) {
-    for (const filter of query.filter) {
-      params.append("filter", `${scaped(filter.property)}:${filter.operator}:${scaped(filter.value)}`);
-    }
-  }
-
-
+  addExtensions(query, params);
   return params;
 }
 
-function scaped(value: string): string {
-  return value
-    .replace(",", "\\,")
-    .replace(":", "\\:");
+function addExtensions(query: PageQuery, params: URLSearchParams) {
+  const extensions = Object.keys(query).filter(key => !["page", "size", "search", "properties", "direction"].includes(key));
+
+  for (const key of extensions) {
+    const value = (query as any)[key];
+    if (value) {
+
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          params.append(key, item.toString());
+        }
+      } else {
+        params.append(key, value.toString());
+      }
+    }
+  }
+
 }

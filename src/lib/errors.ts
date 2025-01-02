@@ -10,7 +10,7 @@ export interface ErrorTitle {
   description: string;
 }
 
-type ProblemDetails<TExtensions = object> = {
+export type ProblemDetails<TExtensions = object> = {
   title: string;
   status: number;
   detail: string;

@@ -1,5 +1,5 @@
 import apiClient from "@/lib/axios.ts";
-import {Entity, Page, PageQuery, pageQueryToQueryParams} from "@/lib/crud.ts";
+import {Entity, Page, PageQuery, pageQueryToParams} from "@/lib/crud.ts";
 
 export interface ByAuthor<T> {
   author: T | null; // null if the author is anonymous
@@ -32,7 +32,7 @@ export async function pagePosts(query: PageQuery): Promise<Page<Forum>> {
   const response = await apiClient.get<Page<Forum>>(
     resource,
     {
-      params: pageQueryToQueryParams(query),
+      params: pageQueryToParams(query),
     }
   );
 

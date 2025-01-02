@@ -1,8 +1,12 @@
-import {Authority, operationUsers, User, UserDto} from "@/services/user-service.ts";
+import {
+  Authority,
+  operationUsers,
+  User,
+  UserDto
+} from "@/services/user-service.ts";
 import {ColumnDef} from "@tanstack/react-table";
 import {ItemsOnRounded} from "@/components/utils-componentes.tsx";
 import BreadcrumbSubLayout from "@/layout/breadcrumb-sub-layout.tsx";
-import {useAuth} from "@/hooks/use-auth.ts";
 import {z} from "zod";
 import {
   FormControl,
@@ -19,9 +23,10 @@ import {
   useState
 } from "react";
 import {UseFormReturn} from "react-hook-form";
-import {FormDef} from "@/components/crud/crud-forms.tsx";
+import {FormComponentProps, FormDefFactory} from "@/components/crud/crud-forms.tsx";
 import CrudTable from "@/components/crud/crud-table.tsx";
 import {CrudSchema} from "@/components/crud/crud-common.ts";
+import {useAuth} from "@/context/auth-context.tsx";
 
 const columns: ColumnDef<User>[] = [
   {
@@ -31,22 +36,22 @@ const columns: ColumnDef<User>[] = [
   },
   {
     header: "Nombre de Usuario",
-    accessorKey: "representation.username",
+    accessorKey: "username",
     enableSorting: false,
   },
   {
     header: "Nombre",
-    accessorKey: "representation.firstName",
+    accessorKey: "firstName",
     enableSorting: false,
   },
   {
     header: "Apellido",
-    accessorKey: "representation.lastName",
+    accessorKey: "lastName",
     enableSorting: false,
   },
   {
     header: "Correo",
-    accessorKey: "representation.email",
+    accessorKey: "email",
     enableSorting: false,
   },
   {
@@ -58,8 +63,8 @@ const columns: ColumnDef<User>[] = [
   },
 ];
 
-const form: FormDef<User, UserDto, number> = {
-  schema: () => {
+const form: FormDefFactory<User, UserDto, number> = {
+  getSchema: () => {
     return z.object({
       username: z.string().nonempty(),
       firstName: z.string().nonempty(),
@@ -73,101 +78,24 @@ const form: FormDef<User, UserDto, number> = {
         .optional(),
     });
   },
-  renderForm: (form, entity) => {
-    const {control, setValue} = form;
-    return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <FormField
-          control={control}
-          name="username"
-          render={({field}) => (
-            <FormItem className="lg:col-span-2">
-              <FormLabel>Nombre de Usuario</FormLabel>
-              <FormControl>
-                <Input placeholder="Nombre de Usuario" {...field} />
-              </FormControl>
-              <FormMessage/>
-            </FormItem>
-          )}
-        />
-        {entity
-          ? <EnableChangePassword form={form}/>
-          : <FormField
-            control={control}
-            name="password"
-            render={({field}) => (
-              <FormItem className="lg:col-span-2">
-                <FormLabel>Contraseña</FormLabel>
-                <FormControl>
-                  <Input type="password" placeholder="Contraseña" {...field} />
-                </FormControl>
-                <FormMessage/>
-              </FormItem>
-            )}
-          />
-        }
-        <FormField
-          control={control}
-          name="firstName"
-          render={({field}) => {
-            return (
-              <FormItem className="lg:col-span-2">
-                <FormLabel>Nombre</FormLabel>
-                <FormControl>
-                  <Input placeholder="Nombre" {...field} />
-                </FormControl>
-                <FormMessage/>
-              </FormItem>
-            );
-          }}
-        />
-        <FormField
-          control={control}
-          name="lastName"
-          render={({field}) => {
-            return (
-              <FormItem className="lg:col-span-2">
-                <FormLabel>Apellido</FormLabel>
-                <FormControl>
-                  <Input placeholder="Apellido" {...field} />
-                </FormControl>
-                <FormMessage/>
-              </FormItem>
-            );
-          }}
-        />
-        <FormField
-          control={control}
-          name="email"
-          render={({field}) => {
-            return (
-              <FormItem className="lg:col-span-2">
-                <FormLabel>Correo</FormLabel>
-                <FormControl>
-                  <Input placeholder="Correo" {...field} />
-                </FormControl>
-                <FormMessage/>
-              </FormItem>
-            );
-          }}
-        />
-        <AuthorityManager
-          intialAuthorities={entity?.authorities ?? []}
-          onChange={(authoritiesToAdd, authoritiesToRemove) => {
-            setValue("authoritiesToAdd", authoritiesToAdd);
-            setValue("authoritiesToRemove", authoritiesToRemove);
-          }}
-        />
-      </div>
-    );
-  },
-  getDefaultValue: (data: User) => {
+  FormComponent: FormComponent,
+  getDefaultValues: (data?: User) => {
+    if (!data)
+      return {
+        username: "",
+        firstName: "",
+        lastName: "",
+        email: "",
+        authoritiesToAdd: [],
+        authoritiesToRemove: [],
+        password: "",
+      };
+
     return {
-      username: data.representation.username,
-      firstName: data.representation.firstName,
-      lastName: data.representation.lastName,
-      email: data.representation.email,
-      emailVerified: data.representation.emailVerified,
+      username: data.username,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      email: data.email,
       authoritiesToAdd: [],
       authoritiesToRemove: [],
       password: undefined,
@@ -178,7 +106,6 @@ const form: FormDef<User, UserDto, number> = {
 export default function UsersPage() {
 
   const {authenticated} = useAuth();
-
   if (!authenticated) return null;
 
   return (
@@ -190,6 +117,95 @@ export default function UsersPage() {
         form={form}
       />
     </BreadcrumbSubLayout>
+  );
+}
+
+function FormComponent({form, entity}: Readonly<FormComponentProps<User, UserDto>>) {
+  const {control, setValue} = form;
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <FormField
+        control={control}
+        name="username"
+        render={({field}) => (
+          <FormItem className="lg:col-span-2">
+            <FormLabel>Nombre de Usuario</FormLabel>
+            <FormControl>
+              <Input placeholder="Nombre de Usuario" {...field} />
+            </FormControl>
+            <FormMessage/>
+          </FormItem>
+        )}
+      />
+      {entity
+        ? <EnableChangePassword form={form}/>
+        : <FormField
+          control={control}
+          name="password"
+          render={({field}) => (
+            <FormItem className="lg:col-span-2">
+              <FormLabel>Contraseña</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder="Contraseña" {...field} />
+              </FormControl>
+              <FormMessage/>
+            </FormItem>
+          )}
+        />
+      }
+      <FormField
+        control={control}
+        name="firstName"
+        render={({field}) => {
+          return (
+            <FormItem className="lg:col-span-2">
+              <FormLabel>Nombre</FormLabel>
+              <FormControl>
+                <Input placeholder="Nombre" {...field} />
+              </FormControl>
+              <FormMessage/>
+            </FormItem>
+          );
+        }}
+      />
+      <FormField
+        control={control}
+        name="lastName"
+        render={({field}) => {
+          return (
+            <FormItem className="lg:col-span-2">
+              <FormLabel>Apellido</FormLabel>
+              <FormControl>
+                <Input placeholder="Apellido" {...field} />
+              </FormControl>
+              <FormMessage/>
+            </FormItem>
+          );
+        }}
+      />
+      <FormField
+        control={control}
+        name="email"
+        render={({field}) => {
+          return (
+            <FormItem className="lg:col-span-2">
+              <FormLabel>Correo</FormLabel>
+              <FormControl>
+                <Input placeholder="Correo" {...field} />
+              </FormControl>
+              <FormMessage/>
+            </FormItem>
+          );
+        }}
+      />
+      <AuthorityManager
+        intialAuthorities={entity?.authorities ?? []}
+        onChange={(authoritiesToAdd, authoritiesToRemove) => {
+          setValue("authoritiesToAdd", authoritiesToAdd);
+          setValue("authoritiesToRemove", authoritiesToRemove);
+        }}
+      />
+    </div>
   );
 }
 
@@ -271,8 +287,6 @@ function getRole(authority: Authority): string {
       return "Administrador";
     case Authority.ADMINISTRATIVE:
       return "Administrativo";
-    case Authority.PROFESSIONAL:
-      return "Profesional";
     case Authority.MEDICAL_PROFESSIONAL:
       return "Profesional Médico";
     case Authority.LEGAL_PROFESSIONAL:

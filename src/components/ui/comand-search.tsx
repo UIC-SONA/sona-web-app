@@ -1,11 +1,11 @@
-import {useEffect, useState} from "react";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover.tsx";
-import {Button} from "@/components/ui/button.tsx";
-import {Check, Loader2} from "lucide-react";
+  ComponentPropsWithoutRef,
+  Dispatch,
+  SetStateAction,
+  useEffect, useRef,
+  useState
+} from "react";
+import {Check, ChevronDown} from "lucide-react";
 import {
   Command,
   CommandEmpty,
@@ -13,144 +13,141 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command.tsx";
-import {cn} from "@/lib/utils.ts";
+} from "@/components/ui/command";
+import {cn} from "@/lib/utils";
+import {Popover, PopoverContent, PopoverTrigger} from "@/components/ui/popover";
+import {Button} from "@/components/ui/button";
 
-interface SearchSelectProps<T> {
+type ItemsType<T> = T[] | (() => Promise<T[]>) | Promise<T[]>;
+
+interface SearchSelectProps<T> extends Omit<ComponentPropsWithoutRef<typeof Command>, "onChange" | "value"> {
   placeholder?: string;
   initialSearch?: string;
+  value?: T | null;
   defaultSelected?: T | null;
-  onSelect: (option: T | null) => void; // Aceptar valores nulos
-  searchFetch: (search: string) => Promise<T[]>;
+  onChange: (option: T | null) => void;
+  items: ItemsType<T>;
   toOption: (item: T) => { value: string; label: string };
   compare?: (item: T, selected: T) => boolean;
   noResultsText?: string;
-  className?: string;
+  isPopover?: boolean; // Para definir si se debe usar en un Popover
+  triggerClassName?: string; // Clase para el botón si es un Popover
+  contentClassName?: string; // Clase para el contenido si es un Popover
+  buttonText?: string; // Texto para el botón del Popover
 }
 
-export default function SearchSelect<T>(
+export function CommandSearch<T>(
   {
     placeholder = "Buscar...",
     initialSearch,
+    value,
     defaultSelected = null,
-    onSelect,
-    searchFetch,
+    onChange,
+    items,
     toOption,
     compare = (a, b) => a === b,
     noResultsText = "No se encontraron resultados.",
-    className,
+    isPopover = false, // Por defecto no es un Popover
+    triggerClassName,
+    contentClassName,
+    buttonText = "Seleccionar...",
+    ...props
   }: Readonly<SearchSelectProps<T>>
 ) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState<string>(initialSearch ?? "");
-  const [isLoading, setIsLoading] = useState(false);
-  const [items, setItems] = useState<T[]>([]);
-  const [selected, setSelected] = useState<T | null>(defaultSelected);
+  const [loading, setLoading] = useState(false);
+  const [internalItems, setInternalItems] = useState<T[]>([]);
+  const [searchValue, setSearchValue] = useState(initialSearch ?? "");
+  const [uncontrolledSelected, setUncontrolledSelected] = useState<T | null>(defaultSelected);
+  const [popOverOpen, setPopOverOpen] = useState(false);
 
-  const dispatchSearch = async (search: string) => {
-    setIsLoading(true);
-    try {
-      const items = await searchFetch(search);
-      setItems(items);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const isControlled = value !== undefined;
+  const selected = isControlled ? value : uncontrolledSelected;
+
+  const itemsRef = useRef(items);
 
   useEffect(() => {
-    const handler = setTimeout(() => {
-      dispatchSearch(search).catch((error) => console.error(error));
-    }, 500);
+    resolveItems(itemsRef.current, setLoading, setInternalItems);
+  }, [itemsRef]);
 
-    return () => clearTimeout(handler);
-  }, [search]);
-
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-  };
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   const handleSelect = (item: T | null) => {
-    setSelected(item);
-    setOpen(false);
-    onSelect(item);
+    if (!isControlled) {
+      setUncontrolledSelected(item);
+    }
+    if (isPopover) {
+      setPopOverOpen(false);
+    }
+    onChange(item);
   };
 
-  console.log(items);
+  const renderList = (
+    <CommandList>
+      <CommandEmpty>{noResultsText}</CommandEmpty>
+      <CommandGroup>
+        <CommandItem onSelect={() => handleSelect(null)}>
+          <Check className={cn("mr-2 h-4 w-4", !selected ? "opacity-100" : "opacity-0")}/>
+          Ninguno
+        </CommandItem>
+        {loading && <CommandItem>Loading...</CommandItem>}
+        {!loading && internalItems.length > 0 &&
+          internalItems.map((item) => {
+            const {value, label} = toOption(item);
+            const isSelected = selected && compare(item, selected);
 
-  return (
-    <Popover open={open} onOpenChange={setOpen} modal={true}>
+            return (
+              <CommandItem key={value} onSelect={() => handleSelect(item)}>
+                <Check className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")}/>
+                {label}
+              </CommandItem>
+            );
+          })}
+      </CommandGroup>
+    </CommandList>
+  );
+
+  const command = (
+    <Command {...props}>
+      <CommandInput
+        placeholder={placeholder}
+        className="h-9"
+        value={searchValue}
+        onInput={(e) => setSearchValue(e.currentTarget.value)}
+      />
+      {renderList}
+    </Command>
+  );
+
+  return isPopover ? (
+    <Popover open={popOverOpen} onOpenChange={setPopOverOpen} modal={true}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          aria-expanded={open}
-          className={cn(
-            "w-full justify-between",
-            search && "text-muted-foreground",
-            className
-          )}
+          aria-controls="popover-select-listbox"
+          aria-expanded={true}
+          className={cn("w-full justify-between", triggerClassName)}
         >
-          {selected ? toOption(selected).label : placeholder}
+          {selected ? toOption(selected).label : buttonText}
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50"/>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
-        <Command>
-          <CommandInput
-            placeholder={placeholder}
-            onValueChange={handleSearchChange}
-            className="h-9"
-            value={search}
-          />
-          <CommandList>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-6">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground"/>
-              </div>
-            ) : (
-              <>
-                {items.length === 0 ? (
-                  <CommandEmpty>{noResultsText}</CommandEmpty>
-                ) : (
-                  <CommandGroup {...(search && {title: `Resultados para "${search}"`})}>
-                    <CommandItem
-                      key="no-selection"
-                      value="no-selection"
-                      onSelect={() => handleSelect(null)} // Deseleccionar
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          !selected ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      Sin seleccionar
-                    </CommandItem>
-                    {items.map((item) => {
-                      const {value, label} = toOption(item);
-                      const isSelected = selected && compare(item, selected);
-
-                      return (
-                        <CommandItem
-                          key={value}
-                          value={value}
-                          onSelect={() => handleSelect(item)}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              isSelected ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {label}
-                        </CommandItem>
-                      );
-                    })}
-                  </CommandGroup>
-                )}
-              </>
-            )}
-          </CommandList>
-        </Command>
+      <PopoverContent className={cn("p-0", contentClassName)}>
+        {command}
       </PopoverContent>
     </Popover>
+  ) : (
+    command
   );
+}
+
+function resolveItems<T>(items: ItemsType<T>, setLoading: Dispatch<SetStateAction<boolean>>, setItems: Dispatch<SetStateAction<T[]>>): void {
+  if (typeof items === "function" || items instanceof Promise) {
+    setLoading(true);
+    const promise = typeof items === "function" ? items() : items;
+    promise.then(setItems).finally(() => setLoading(false));
+    return;
+  }
+  setItems(items);
 }

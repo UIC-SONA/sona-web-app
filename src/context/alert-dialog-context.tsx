@@ -4,7 +4,7 @@ import {
   useState,
   useCallback,
   PropsWithChildren,
-  useMemo
+  useMemo, useContext
 } from "react";
 import {
   AlertDialog,
@@ -72,7 +72,7 @@ interface LoadingState {
   action: ActionType;
 }
 
-export interface DialogContextType {
+export interface AlertDialogContextType {
   pushAlertDialog: <Type extends DialogType>(config: AlertDialogConfigurer<Type>) => string;
   popAlertDialog: (id: string) => void;
 }
@@ -91,9 +91,9 @@ type DialogState<T extends DialogType = DialogType> = {
 
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const DialogContext = createContext<DialogContextType | null>(null);
+export const AlertDialogContext = createContext<AlertDialogContextType | null>(null);
 
-export const DialogProvider = ({children}: Readonly<PropsWithChildren>) => {
+export const AlertDialogProvider = ({children}: Readonly<PropsWithChildren>) => {
   const [dialogs, setDialogs] = useState<DialogState[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState[]>([]);
 
@@ -162,7 +162,7 @@ export const DialogProvider = ({children}: Readonly<PropsWithChildren>) => {
   }), [pushAlertDialog, popAlertDialog]);
 
   return (
-    <DialogContext.Provider value={contextValue}>
+    <AlertDialogContext.Provider value={contextValue}>
       {children}
       {dialogs.map((dialog) => {
         const thisDialogLoading = isDialogLoading(dialog.id);
@@ -210,6 +210,14 @@ export const DialogProvider = ({children}: Readonly<PropsWithChildren>) => {
           </AlertDialogContent>
         </AlertDialog>
       })}
-    </DialogContext.Provider>
+    </AlertDialogContext.Provider>
   );
+};
+
+export const useAlertDialog = () => {
+  const context = useContext(AlertDialogContext);
+  if (!context) {
+    throw new Error('useDialog must be used within a DialogProvider');
+  }
+  return context;
 };

@@ -1,5 +1,5 @@
 import apiClient from "@/lib/axios.ts";
-import {CrudOperations, Page, PageQuery, pageQueryToQueryParams} from "@/lib/crud.ts";
+import {CrudOperations, Page, PageQuery, pageQueryToParams} from "@/lib/crud.ts";
 import {Buffer} from "buffer";
 
 export interface DidaticContent {
@@ -33,7 +33,7 @@ export async function pageDidacticContent(query: PageQuery): Promise<Page<Didati
   const response = await apiClient.get<Page<DidaticContent>>(
     resource,
     {
-      params: pageQueryToQueryParams(query),
+      params: pageQueryToParams(query),
     }
   );
 

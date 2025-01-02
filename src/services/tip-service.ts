@@ -1,6 +1,6 @@
 import apiClient from "@/lib/axios.ts";
 import {Message} from "@/lib/types.ts";
-import {CrudOperations, Page, PageQuery, pageQueryToQueryParams} from "@/lib/crud.ts";
+import {CrudOperations, Page, PageQuery, pageQueryToParams} from "@/lib/crud.ts";
 import {Buffer} from "buffer";
 
 export interface Tip {
@@ -48,7 +48,7 @@ export async function pageTip(query: PageQuery): Promise<Page<Tip>> {
   const response = await apiClient.get<Page<Tip>>(
     resource,
     {
-      params: pageQueryToQueryParams(query),
+      params: pageQueryToParams(query),
     }
   );
 

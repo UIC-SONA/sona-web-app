@@ -11,15 +11,16 @@ import SingUpForm from "@/components/sing-up-form.tsx";
 import MainLayout from "@/layout/main-layout.tsx";
 import UsersPage from "@/pages/users.page.tsx";
 import TipsPage from "@/pages/tips.page.tsx";
-import {DialogProvider} from "@/context/dialog-context.tsx";
+import {AlertDialogProvider} from "@/context/alert-dialog-context.tsx";
 import ForumPage from "@/pages/forum.page.tsx";
 import DidacticContentPage from "@/pages/didactic-content.page.tsx";
-import ProfessionalSchedulePage from "@/pages/professional-schendule.page.tsx";
+import ProfessionalSchedulePage from "@/pages/professional-schedule.page.tsx";
+import {Toaster} from "@/components/ui/toaster.tsx";
 
 
 createRoot(document.getElementById('root')!).render(
   <ThemeContext defaultTheme="dark" storageKey="sona-ui-theme">
-    <DialogProvider>
+    <AlertDialogProvider>
       <AuthProvider>
         <BrowserRouter>
           <Routes>
@@ -40,6 +41,7 @@ createRoot(document.getElementById('root')!).render(
           </Routes>
         </BrowserRouter>
       </AuthProvider>
-    </DialogProvider>
+      <Toaster/>
+    </AlertDialogProvider>
   </ThemeContext>
 );

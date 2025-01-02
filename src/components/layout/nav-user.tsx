@@ -1,5 +1,3 @@
-"use client"
-
 import {BadgeCheck, Bell, ChevronsUpDown, LogOut,} from "lucide-react"
 
 import {
@@ -22,11 +20,10 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import {profilePicture, User, UserRepresentation} from "@/services/user-service.ts";
+import {profilePicture, User} from "@/services/user-service.ts";
 import {useEffect, useState} from "react";
-import {useAuth} from "@/hooks/use-auth.ts";
-import {useAlertDialog} from "@/hooks/use-alert-dialog.ts";
-import {DialogType} from "@/context/dialog-context.tsx";
+import {DialogType, useAlertDialog} from "@/context/alert-dialog-context.tsx";
+import {useAuth} from "@/context/auth-context.tsx";
 
 
 export interface NavUserProps {
@@ -38,7 +35,6 @@ export function NavUser({user}: Readonly<NavUserProps>) {
   const {logoutUser} = useAuth();
   const {pushAlertDialog} = useAlertDialog();
   const [profileImage, setProfileImage] = useState<string | null>(null)
-  const representation = user.representation;
 
   useEffect(() => {
     profilePicture()
@@ -65,7 +61,7 @@ export function NavUser({user}: Readonly<NavUserProps>) {
             size="lg"
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
-            <ProfileInfo profilePicture={profileImage} representation={representation}/>
+            <ProfileInfo profilePicture={profileImage} user={user}/>
             <ChevronsUpDown className="ml-auto size-4"/>
           </SidebarMenuButton>
         </DropdownMenuTrigger>
@@ -77,7 +73,7 @@ export function NavUser({user}: Readonly<NavUserProps>) {
         >
           <DropdownMenuLabel className="p-0 font-normal">
             <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-              <ProfileInfo profilePicture={profileImage} representation={representation}/>
+              <ProfileInfo profilePicture={profileImage} user={user}/>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator/>
@@ -104,18 +100,18 @@ export function NavUser({user}: Readonly<NavUserProps>) {
 
 interface ProfileInfoProps {
   profilePicture: string | null
-  representation: UserRepresentation
+  user: User
 }
 
-function ProfileInfo({profilePicture, representation}: Readonly<ProfileInfoProps>) {
+function ProfileInfo({profilePicture, user}: Readonly<ProfileInfoProps>) {
   return <>
     <Avatar className="h-8 w-8 rounded-lg">
-      <AvatarImage src={profilePicture ?? ''} alt={representation.firstName}/>
+      <AvatarImage src={profilePicture ?? ''} alt={user.firstName}/>
       <AvatarFallback className="rounded-lg">CN</AvatarFallback>
     </Avatar>
     <div className="grid flex-1 text-left text-sm leading-tight">
-      <span className="truncate font-semibold">{representation.firstName}</span>
-      <span className="truncate text-xs">{representation.email}</span>
+      <span className="truncate font-semibold">{user.firstName}</span>
+      <span className="truncate text-xs">{user.email}</span>
     </div>
   </>
 }

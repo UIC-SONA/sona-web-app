@@ -4,16 +4,15 @@ import {
   useLocation,
   useNavigate
 } from "react-router";
-import {useAuth} from "@/hooks/use-auth.ts";
 import {
   SVGProps,
   useEffect,
   useLayoutEffect
 } from "react";
 import {cn} from "@/lib/utils.ts";
-import {useAlertDialog} from "@/hooks/use-alert-dialog.ts";
-import {DialogType} from "@/context/dialog-context.tsx";
+import {DialogType, useAlertDialog} from "@/context/alert-dialog-context.tsx";
 import {Button} from "@/components/ui/button.tsx";
+import {useAuth} from "@/context/auth-context.tsx";
 
 
 export default function AuthGuard() {

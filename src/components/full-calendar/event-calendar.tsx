@@ -13,8 +13,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 
 import {useRef, ComponentProps, useState} from "react";
 import EventCalendarNav from "./event-calendar-nav.tsx";
-import {earliestTime, latestTime} from "@/utils/data";
-import {getDateFromMinutes} from "@/lib/utils";
+
 import {Card} from "@/components/ui/card.tsx";
 
 type EventItemProps = {
@@ -44,26 +43,6 @@ export default function EventCalendar(
   const calendarRef = useRef<FullCalendar | null>(null);
   const [viewedDate, setViewedDate] = useState(new Date());
 
-  const earliestHour = getDateFromMinutes(earliestTime)
-    .getHours()
-    .toString()
-    .padStart(2, "0");
-  const earliestMin = getDateFromMinutes(earliestTime)
-    .getMinutes()
-    .toString()
-    .padStart(2, "0");
-  const latestHour = getDateFromMinutes(latestTime)
-    .getHours()
-    .toString()
-    .padStart(2, "0");
-  const latestMin = getDateFromMinutes(latestTime)
-    .getMinutes()
-    .toString()
-    .padStart(2, "0");
-
-  const calendarEarliestTime = `${earliestHour}:${earliestMin}`;
-  const calendarLatestTime = `${latestHour}:${latestMin}`;
-
   return (
     <div className="space-y-5">
       <EventCalendarNav
@@ -86,8 +65,6 @@ export default function EventCalendar(
           ]}
           initialView="timeGridWeek"
           headerToolbar={false}
-          slotMinTime={calendarEarliestTime}
-          slotMaxTime={calendarLatestTime}
           allDaySlot={false}
           firstDay={1}
           height={"32vh"}

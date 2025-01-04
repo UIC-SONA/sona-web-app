@@ -89,9 +89,9 @@ interface CommonFormProps<TData extends Entity<ID>, Dto, ID> extends BaseFormPro
 }
 
 
-interface BaseFormPropsMutate<TData extends Entity<ID>, Dto, ID> extends BaseFormProps {
+interface BaseFormPropsMutate<TData extends Entity<ID>, Dto, ID> extends Omit<BaseFormProps, 'onSuccess'> {
   form: FormDef<TData, Dto, ID>,
-  onSuccessResult?: (entity: TData) => void,
+  onSuccess?: (entity: TData) => void,
 }
 
 
@@ -134,11 +134,10 @@ function CommonForm<TData extends Entity<ID>, Dto, ID>(
   {
     open,
     setOpen,
-    onSuccess,
     title,
     description,
     onSubmitAction,
-    onSuccessResult,
+    onSuccess,
     onCloseErrorDialog,
     form: {
       schema,
@@ -170,8 +169,7 @@ function CommonForm<TData extends Entity<ID>, Dto, ID>(
     try {
       await dispatchSubmitAction(form, async () => {
         const result = await onSubmitAction(values as Dto);
-        onSuccessResult?.(result);
-        onSuccess?.();
+        onSuccess?.(result);
         setOpen(false);
         toastAction && toast(toastAction);
       });

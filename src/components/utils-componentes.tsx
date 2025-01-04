@@ -38,12 +38,18 @@ export function OpenImageModal({fetcher, alt}: Readonly<ImageFetcherProps>) {
         <ImageIcon/>
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-h-[80vh]">
+        <DialogContent className="sm:max-h-[80vh] overflow-hidden">
           <DialogTitle>{alt}</DialogTitle>
-          <div className="flex justify-center">
+          <div className="relative flex justify-center items-center w-full max-h-[calc(80vh-8rem)]">
             {loading && <Loader2 className="animate-spin"/>}
             {error && <CircleX className="text-red-500"/>}
-            {imageSrc && <img src={imageSrc} alt={alt} className="w-full"/>}
+            {imageSrc && (
+              <img
+                src={imageSrc}
+                alt={alt}
+                className="w-full h-full object-contain"
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>

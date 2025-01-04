@@ -1,8 +1,8 @@
 import {
   Authority,
-  operationUsers,
+  operationUsers, pageUser,
   User,
-  UserDto
+  UserDto, UserFilter
 } from "@/services/user-service.ts";
 import {ColumnDef} from "@tanstack/react-table";
 import {ItemsOnRounded} from "@/components/utils-componentes.tsx";
@@ -23,10 +23,25 @@ import {
   useState
 } from "react";
 import {UseFormReturn} from "react-hook-form";
-import {FormComponentProps, FormDefFactory} from "@/components/crud/crud-forms.tsx";
+import {
+  FormComponentProps,
+  FormDefFactory
+} from "@/components/crud/crud-forms.tsx";
 import CrudTable from "@/components/crud/crud-table.tsx";
 import {CrudSchema} from "@/components/crud/crud-common.ts";
 import {useAuth} from "@/context/auth-context.tsx";
+import {
+  Page,
+  PageQuery
+} from "@/lib/crud.ts";
+
+
+function pageUserByAuthorities(query: PageQuery<UserFilter>, authorities: Authority[]): Promise<Page<User>> {
+  return pageUser({
+    ...query,
+    authorities,
+  });
+}
 
 const columns: ColumnDef<User>[] = [
   {
@@ -63,64 +78,83 @@ const columns: ColumnDef<User>[] = [
   },
 ];
 
-const form: FormDefFactory<User, UserDto, number> = {
-  getSchema: () => {
-    return z.object({
-      username: z.string().nonempty(),
-      firstName: z.string().nonempty(),
-      lastName: z.string().nonempty(),
-      email: z.string().email(),
-      authoritiesToAdd: z.array(z.nativeEnum(Authority)),
-      authoritiesToRemove: z.array(z.nativeEnum(Authority)),
-      password: z.string()
-        .nonempty()
-        .min(8, {message: "La contraseña debe tener al menos 8 caracteres"})
-        .optional(),
-    });
-  },
-  FormComponent: FormComponent,
-  getDefaultValues: (data?: User) => {
-    if (!data)
-      return {
-        username: "",
-        firstName: "",
-        lastName: "",
-        email: "",
-        authoritiesToAdd: [],
-        authoritiesToRemove: [],
-        password: "",
-      };
+export interface UserBasePageProps {
+  title: string;
+  breadcrumbs: string[];
+  authorities?: Authority[];
+}
 
-    return {
-      username: data.username,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      email: data.email,
-      authoritiesToAdd: [],
-      authoritiesToRemove: [],
-      password: undefined,
-    };
-  },
-};
-
-export default function UsersPage() {
+export default function UserBasePage(
+  {
+    title,
+    authorities,
+    breadcrumbs
+  }: Readonly<UserBasePageProps>
+) {
 
   const {authenticated} = useAuth();
   if (!authenticated) return null;
 
+  const form: FormDefFactory<User, UserDto, number> = {
+    getSchema: () => {
+      return z.object({
+        username: z.string().nonempty(),
+        firstName: z.string().nonempty(),
+        lastName: z.string().nonempty(),
+        email: z.string().email(),
+        authoritiesToAdd: z.array(z.nativeEnum(Authority)),
+        authoritiesToRemove: z.array(z.nativeEnum(Authority)),
+        password: z.string()
+          .nonempty()
+          .min(8, {message: "La contraseña debe tener al menos 8 caracteres"})
+          .optional(),
+      });
+    },
+    FormComponent: (props) => <FormComponent {...props} authorities={authorities}/>,
+    getDefaultValues: (data?: User) => {
+      if (!data)
+        return {
+          username: "",
+          firstName: "",
+          lastName: "",
+          email: "",
+          authoritiesToAdd: [],
+          authoritiesToRemove: [],
+          password: "",
+        };
+
+      return {
+        username: data.username,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        authoritiesToAdd: [],
+        authoritiesToRemove: [],
+        password: undefined,
+      };
+    },
+  };
+
   return (
-    <BreadcrumbSubLayout items={["Usuarios"]}>
+    <BreadcrumbSubLayout items={breadcrumbs}>
       <CrudTable<User, UserDto, number>
-        title={"Usuarios"}
+        title={title}
         columns={columns}
-        operations={operationUsers}
+        operations={{
+          ...operationUsers,
+          page: (authorities ? (query) => pageUserByAuthorities(query, authorities) : pageUser),
+        }}
         form={form}
       />
     </BreadcrumbSubLayout>
   );
 }
 
-function FormComponent({form, entity}: Readonly<FormComponentProps<User, UserDto>>) {
+interface FormUserProps extends FormComponentProps<User, UserDto> {
+  authorities?: Authority[];
+}
+
+function FormComponent({form, entity, authorities}: Readonly<FormUserProps>) {
   const {control, setValue} = form;
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -199,6 +233,7 @@ function FormComponent({form, entity}: Readonly<FormComponentProps<User, UserDto
         }}
       />
       <AuthorityManager
+        authorities={authorities}
         intialAuthorities={entity?.authorities ?? []}
         onChange={(authoritiesToAdd, authoritiesToRemove) => {
           setValue("authoritiesToAdd", authoritiesToAdd);
@@ -254,16 +289,24 @@ function EnableChangePassword({form}: Readonly<{ form: UseFormReturn<z.infer<Cru
 interface AuthorityManagerProps {
   intialAuthorities: Authority[],
   onChange: (authoritiesToAdd: Authority[], authoritiesToRemove: Authority[]) => void,
+  authorities?: Authority[],
 }
 
-function AuthorityManager({intialAuthorities, onChange}: Readonly<AuthorityManagerProps>) {
+function AuthorityManager(
+  {
+    intialAuthorities,
+    onChange,
+    authorities: _authorities
+  }: Readonly<AuthorityManagerProps>
+) {
+
   const [authorities, setAuthorities] = useState<Option[]>(intialAuthorities.map(authorityToOption));
 
   return <FormItem className="lg:col-span-2">
     <FormLabel>Roles</FormLabel>
     <FormControl>
       <MultipleSelector
-        defaultOptions={Object.values(Authority).map(authorityToOption)}
+        defaultOptions={_authorities?.map(authorityToOption) ?? Object.values(Authority).map(authorityToOption)}
         value={authorities}
         onChange={(selected) => {
           const conditionToAdd = (option: Option) => !intialAuthorities.includes(optionToAuthority(option));

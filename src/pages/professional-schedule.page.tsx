@@ -1,8 +1,11 @@
 import BreadcrumbSubLayout from "@/layout/breadcrumb-sub-layout.tsx";
 import {
-  createProfessionalSchedule, deleteProfessionalSchedule,
+  createProfessionalSchedule,
+  deleteProfessionalSchedule,
   getSchedulesByProfessionalId,
-  ProfessionalSchedule, ProfessionalScheduleDto, updateProfessionalSchedule
+  ProfessionalSchedule,
+  ProfessionalScheduleDto,
+  updateProfessionalSchedule
 } from "@/services/professional-schedule-service.ts";
 import {
   Authority,
@@ -304,7 +307,7 @@ function CreateScheduleForm({open, setOpen, professional, addSchedule}: Readonly
         professionalId: professional?.id,
       },
     }}
-    onSuccessResult={(schedule) => {
+    onSuccess={(schedule) => {
       addSchedule(schedule);
     }}
   />
@@ -354,7 +357,7 @@ function UpdateScheduleForm({open, setOpen, schedule, oldSchedule, updateSchedul
       schema: scheduleSchema,
       defaultValues: defaultValues,
     }}
-    onSuccessResult={(schedule) => {
+    onSuccess={(schedule) => {
       updateSchedule(schedule);
     }}
     onCancel={resetSchedule}

@@ -64,6 +64,10 @@ const navItems: NavItem[] = [
     icon: UserIcon,
     items: [
       {
+        title: "Gestion",
+        url: "/professional",
+      },
+      {
         title: "Horarios de atención",
         url: "/professional-schedules",
       },

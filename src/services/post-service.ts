@@ -26,7 +26,7 @@ export interface ForumDto {
 }
 
 
-const resource = '/forum';
+const resource = '/forum/post';
 
 export async function pagePosts(query: PageQuery): Promise<Page<Forum>> {
   const response = await apiClient.get<Page<Forum>>(

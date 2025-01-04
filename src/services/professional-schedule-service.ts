@@ -16,7 +16,7 @@ export interface ProfessionalScheduleDto {
   professionalId: number;
 }
 
-const resource = '/professional-schedules';
+const resource = '/professional-schedule';
 
 export async function pageProfessionalSchedule(query: PageQuery): Promise<Page<ProfessionalSchedule>> {
   const response = await apiClient.get<Page<ProfessionalSchedule>>(

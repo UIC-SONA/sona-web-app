@@ -1,4 +1,3 @@
-import {ColumnDef} from "@tanstack/react-table";
 import {
   ClickToShowUUID,
   LoadingImage,
@@ -16,87 +15,93 @@ import {
 } from "@/components/ui/form.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import {Textarea} from "@/components/ui/textarea.tsx";
-import {FormComponentProps, FormDefFactory} from "@/components/crud/crud-forms.tsx";
-import CrudTable from "@/components/crud/crud-table.tsx";
 import {
-  didacticContentImage,
+  FormComponentProps
+} from "@/components/crud/crud-forms.tsx";
+import CrudTable, {FormFactory, TableFactory} from "@/components/crud/crud-table.tsx";
+import {
   DidaticContent,
   DidaticContentDto,
-  operationDidacticContent
+  didacticContentService,
 } from "@/services/didactic-content-service.ts";
 import {useAuth} from "@/context/auth-context.tsx";
-
-const columns: ColumnDef<DidaticContent>[] = [
-  {
-    header: "Id",
-    accessorKey: "id",
-    enableSorting: true,
-    cell: ({row}) => {
-      return <ClickToShowUUID id={row.original.id}/>
-    }
-  },
-  {
-    header: "Título",
-    accessorKey: "title",
-    enableSorting: false,
-  },
-  {
-    header: "Descripción",
-    accessorKey: "description",
-    enableSorting: false,
-    cell: ({row}) => {
-      return <Truncate text={row.original.content}/>
-    }
-  },
-  {
-    header: "Imagen",
-    accessorKey: "image",
-    cell: ({row}) => {
-      return <OpenImageModal
-        key={row.original.image}
-        fetcher={() => didacticContentImage(row.original.id)}
-        alt={row.original.title}
-      />
-    },
-  },
-];
-
-
-const form: FormDefFactory<DidaticContent, DidaticContentDto, string> = {
-  getSchema: formAction => {
-    return z.object({
-      title: z.string().nonempty("El título es requerido"),
-      content: z.string().nonempty("El contenido es requerido"),
-      image: formAction === "create" ? z.instanceof(File) : z.instanceof(File).optional(),
-    });
-  },
-  FormComponent: FormComponent,
-  getDefaultValues: (data?: DidaticContent) => {
-    if (!data) {
-      return {
-        title: "",
-        content: "",
-      };
-    }
-    return {
-      title: data.title,
-      content: data.content,
-    };
-  },
-};
-
 
 export default function DidacticContentPage() {
 
   const {authenticated} = useAuth();
   if (!authenticated) return null;
 
+  const table: TableFactory<DidaticContent, string> = {
+    columns: [
+      {
+        header: "Id",
+        accessorKey: "id",
+        enableSorting: true,
+        cell: ({row}) => {
+          return <ClickToShowUUID id={row.original.id}/>
+        }
+      },
+      {
+        header: "Título",
+        accessorKey: "title",
+        enableSorting: false,
+      },
+      {
+        header: "Descripción",
+        accessorKey: "description",
+        enableSorting: false,
+        cell: ({row}) => {
+          return <Truncate text={row.original.content}/>
+        }
+      },
+      {
+        header: "Imagen",
+        accessorKey: "image",
+        cell: ({row}) => {
+          return <OpenImageModal
+            key={row.original.image}
+            fetcher={() => didacticContentService.getImage(row.original.id)}
+            alt={row.original.title}
+          />
+        },
+      },
+    ],
+  };
+
+  const form: FormFactory<DidaticContent, DidaticContentDto, string> = {
+    update: {
+      schema: z.object({
+        title: z.string().nonempty("El título es requerido"),
+        content: z.string().nonempty("El contenido es requerido"),
+        image: z.instanceof(File).optional(),
+      }),
+      defaultValues: (data: DidaticContent) => {
+        return {
+          title: data.title,
+          content: data.content,
+        };
+      }
+    },
+    create: {
+      schema: z.object({
+        title: z.string().nonempty("El título es requerido"),
+        content: z.string().nonempty("El contenido es requerido"),
+        image: z.instanceof(File),
+      }),
+      defaultValues: {
+        title: "",
+        content: "",
+      }
+    },
+    FormComponent,
+  };
+
   return (
     <BreadcrumbSubLayout items={["Contenido Didáctico"]}>
       <CrudTable<DidaticContent, DidaticContentDto, string>
         title={"Contenido Didáctico"}
-        columns={columns}
-        operations={operationDidacticContent}
+        operations={didacticContentService}
+        table={table}
         form={form}
       />
     </BreadcrumbSubLayout>
@@ -139,7 +144,7 @@ function FormComponent({form, entity}: Readonly<FormComponentProps<DidaticConten
         control={control}
         name="image"
         render={({field}) => {
-          const {value, onChange, ...rest} = field;
+          const {value, onChange, ...props} = field;
 
           return (
             <FormItem className="sm:col-span-2 lg:col-span-4 flex flex-col sm:flex-row sm:items-center sm:space-x-4">
@@ -151,13 +156,13 @@ function FormComponent({form, entity}: Readonly<FormComponentProps<DidaticConten
                     onChange={(e) => {
                       onChange(e.target.files?.[0]);
                     }}
-                    {...rest}
+                    {...props}
                   />
                 </FormControl>
               </div>
               <FormMessage/>
               <div className="mt-4">
-                {entity && !value && <LoadingImage fetcher={() => didacticContentImage(entity.id)} alt={entity.title}/>}
+                {entity && !value && <LoadingImage fetcher={() => didacticContentService.getImage(entity.id)} alt={entity.title}/>}
                 {value && <img src={URL.createObjectURL(value)} alt="Preview"/>}
               </div>
             </FormItem>

@@ -32,13 +32,14 @@ export function emptyPage<T>(): Page<T> {
 
 export type Direction = "ASC" | "DESC";
 
-export type PageQuery<E = {}> = {
+export type PageQuery<F = {}> = {
   search?: string;
   page: number;
   size: number;
   properties?: string[];
   direction?: Direction;
-} & E;
+  filters?: Partial<F>;
+};
 
 export function defaultPageQuery(size: number = 10): PageQuery {
   return {
@@ -48,8 +49,8 @@ export function defaultPageQuery(size: number = 10): PageQuery {
   };
 }
 
-export type Pageable<T> = {
-  page: (query: PageQuery) => Promise<Page<T>>;
+export type Pageable<T, F = {}> = {
+  page: (query: PageQuery<F>) => Promise<Page<T>>;
 };
 
 export type Findable<T extends Entity<ID>, ID> = {
@@ -77,15 +78,15 @@ export type Deletable<ID> = {
   delete: (id: ID) => Promise<void>;
 };
 
-export type ReadOperations<T extends Entity<ID>, ID> = Findable<T, ID> & Pageable<T> & Countable & Existable<ID>;
+export type ReadOperations<T extends Entity<ID>, ID, F = {}> = Findable<T, ID> & Pageable<T, F> & Countable & Existable<ID>;
 
 export type WriteOperations<T extends Entity<ID>, D, ID> = Creatable<T, D> & Updatable<T, D, ID> & Deletable<ID>;
 
-export type CrudOperations<T extends Entity<ID>, D, ID> = ReadOperations<T, ID> & WriteOperations<T, D, ID>;
+export type CrudOperations<T extends Entity<ID>, D, ID, F = {}> = ReadOperations<T, ID, F> & WriteOperations<T, D, ID>;
 
 
-export function isPageable<T>(operations: unknown): operations is Pageable<T> {
-  return (operations as Pageable<T>).page !== undefined;
+export function isPageable<F>(operations: unknown): operations is Pageable<F> {
+  return (operations as Pageable<F>).page !== undefined;
 }
 
 export function isFindable<T extends Entity<ID>, ID>(operations: unknown): operations is Findable<T, ID> {
@@ -122,44 +123,4 @@ export function isWriteOperations<T extends Entity<ID>, D, ID>(operations: unkno
 
 export function isCrudOperations<T extends Entity<ID>, D, ID>(operations: unknown): operations is CrudOperations<T, D, ID> {
   return isReadOperations(operations) && isWriteOperations(operations);
-}
-
-
-export function pageQueryToParams(query: PageQuery): URLSearchParams {
-  const params = new URLSearchParams();
-  params.append("page", query.page.toString());
-  params.append("size", query.size.toString());
-  if (query.search) {
-    params.append("search", query.search);
-  }
-  if (query.properties) {
-    for (const property of query.properties) {
-      params.append("properties", property);
-    }
-  }
-  if (query.direction) {
-    params.append("direction", query.direction);
-  }
-
-  addExtensions(query, params);
-  return params;
-}
-
-function addExtensions(query: PageQuery, params: URLSearchParams) {
-  const extensions = Object.keys(query).filter(key => !["page", "size", "search", "properties", "direction"].includes(key));
-
-  for (const key of extensions) {
-    const value = (query as any)[key];
-    if (value) {
-
-      if (Array.isArray(value)) {
-        for (const item of value) {
-          params.append(key, item.toString());
-        }
-      } else {
-        params.append(key, value.toString());
-      }
-    }
-  }
-
 }

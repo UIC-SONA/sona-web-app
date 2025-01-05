@@ -17,6 +17,8 @@ import ProfessionalSchedulePage from "@/pages/professional-schedule.page.tsx";
 import {Toaster} from "@/components/ui/toaster.tsx";
 import ProfessionalPage from "@/pages/professional.page.tsx";
 import UserPage from "@/pages/user.page.tsx";
+import {AppointmentPage} from "@/pages/appointment.page.tsx";
+import AppointmentsCalendarPage from "@/pages/appointments-calendar.page.tsx";
 
 
 createRoot(document.getElementById('root')!).render(
@@ -30,10 +32,12 @@ createRoot(document.getElementById('root')!).render(
                 <Route index element={<App/>}/>
                 <Route path="users" element={<UserPage/>}/>
                 <Route path="tips" element={<TipsPage/>}/>
-                <Route path="forum" element={<ForumPage/>}/>
+                <Route path="posts" element={<ForumPage/>}/>
                 <Route path="didactic-content" element={<DidacticContentPage/>}/>
                 <Route path="professional-schedules" element={<ProfessionalSchedulePage/>}/>
-                <Route path="professional" element={<ProfessionalPage/>}/>
+                <Route path="professionals" element={<ProfessionalPage/>}/>
+                <Route path="appointments" element={<AppointmentPage/>}/>
+                <Route path="appointments-calendar" element={<AppointmentsCalendarPage/>}/>
               </Route>
               <Route path="auth" element={<AuthPage/>}>
                 <Route path="login" element={<LoginForm/>}/>

@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog.tsx";
 import {extractError} from "@/lib/errors.ts";
-import {DialogType, useAlertDialog} from "@/context/alert-dialog-context.tsx";
+import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
 
 
 export default function SingUpForm() {
@@ -41,12 +41,20 @@ export default function SingUpForm() {
   const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
     if ([username, password, repeatPassword, firstName, lastName, email].some((field) => field === "")) {
-      pushAlertDialog({type: DialogType.ERROR, title: "Campos vacíos", description: "Por favor, completa todos los campos"});
+      pushAlertDialog({
+        type: "error",
+        title: "Campos vacíos",
+        description: "Por favor, completa todos los campos"
+      });
       return;
     }
 
     if (password !== repeatPassword) {
-      pushAlertDialog({type: DialogType.ERROR, title: "Contraseñas no coinciden", description: "Las contraseñas no coinciden"});
+      pushAlertDialog({
+        type: "error",
+        title: "Contraseñas no coinciden",
+        description: "Las contraseñas no coinciden"
+      });
       return;
     }
 
@@ -56,7 +64,11 @@ export default function SingUpForm() {
       setSuccess(true);
     } catch (error) {
       const err = extractError(error);
-      pushAlertDialog({type: DialogType.ERROR, title: err.title, description: err.description});
+      pushAlertDialog({
+        type: "error",
+        title: err.title,
+        description: err.description
+      });
     } finally {
       setLoading(false);
     }

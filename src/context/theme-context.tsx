@@ -13,13 +13,8 @@ type ThemeProviderState = {
   setTheme: (theme: Theme) => void
 }
 
-const initialState: ThemeProviderState = {
-  theme: "system",
-  setTheme: () => null,
-}
-
 // eslint-disable-next-line react-refresh/only-export-components
-export const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
+export const ThemeProviderContext = createContext<ThemeProviderState | undefined>(undefined)
 
 export default function ThemeContext(
   {
@@ -30,18 +25,7 @@ export default function ThemeContext(
   }: Readonly<ThemeProviderProps>
 ) {
 
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-  )
-
-  const value = useMemo(() => ({
-    theme,
-    setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme)
-      setTheme(theme)
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [])
+  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem(storageKey) as Theme) || defaultTheme)
 
   useEffect(() => {
     const root = window.document.documentElement
@@ -61,6 +45,13 @@ export default function ThemeContext(
     root.classList.add(theme)
   }, [theme])
 
+  const value = useMemo(() => ({
+    theme,
+    setTheme: (theme: Theme) => {
+      localStorage.setItem(storageKey, theme)
+      setTheme(theme)
+    },
+  }), [theme])
 
   return (
     <ThemeProviderContext.Provider {...props} value={value}>
@@ -69,8 +60,8 @@ export default function ThemeContext(
   )
 }
 
-
 export const useTheme = () => {
+
   const context = useContext(ThemeProviderContext)
 
   if (context === undefined)

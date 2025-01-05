@@ -1,6 +1,11 @@
 import apiClient from "@/lib/axios.ts";
-import {CrudOperations, Page, PageQuery, pageQueryToParams} from "@/lib/crud.ts";
 import {Buffer} from "buffer";
+import {
+  CrudHeadersConfig,
+  restCrud
+} from "@/lib/rest-crud.ts";
+
+const resource = '/content/didactic';
 
 export interface DidaticContent {
   id: string;
@@ -15,9 +20,8 @@ export interface DidaticContentDto {
   image: File | undefined;
 }
 
-const resource = '/content/didactic';
 
-export async function didacticContentImage(id: string): Promise<string> {
+async function getImage(id: string): Promise<string> {
   const response = await apiClient.get<string>(
     `${resource}/${id}/image`,
     {
@@ -29,107 +33,35 @@ export async function didacticContentImage(id: string): Promise<string> {
   return `data:${contentType};base64,${base64}`;
 }
 
-export async function pageDidacticContent(query: PageQuery): Promise<Page<DidaticContent>> {
-  const response = await apiClient.get<Page<DidaticContent>>(
-    resource,
-    {
-      params: pageQueryToParams(query),
-    }
-  );
-
-  return response.data;
-}
-
-export async function findDidacticContent(id: string): Promise<DidaticContent> {
-  const response = await apiClient.get<DidaticContent>(
-    `${resource}/${id}`,
-  );
-
-  return response.data;
-}
-
-export async function findManyDidacticContent(ids: string[]): Promise<DidaticContent[]> {
-  const response = await apiClient.get<DidaticContent[]>(
-    `${resource}/many`,
-    {
-      params: new URLSearchParams({
-        ids: ids.join(','),
-      }),
-    }
-  );
-
-  return response.data;
-}
-
-export async function countDidacticContent(): Promise<number> {
-  const response = await apiClient.get<number>(
-    `${resource}/count`,
-  );
-
-  return response.data;
-}
-
-export async function existDidacticContent(id: string): Promise<boolean> {
-  const response = await apiClient.get<boolean>(
-    `${resource}/exist/${id}`,
-  );
-
-  return response.data;
-}
-
-function dtoToFormData(entity: DidaticContentDto): FormData {
+function dtoTranformer(dto: DidaticContentDto): FormData {
   const formData = new FormData();
-  formData.append('title', entity.title);
-  formData.append('content', entity.content);
-  if (entity.image) formData.append('image', entity.image);
+  formData.append('title', dto.title);
+  formData.append('content', dto.content);
+  if (dto.image) formData.append('image', dto.image);
   return formData;
 }
 
-export async function createDidacticContent(entity: DidaticContentDto): Promise<DidaticContent> {
-  const formData = dtoToFormData(entity);
-  const response = await apiClient.post<DidaticContent>(
-    resource,
-    formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    }
-  );
-
-  return response.data;
-}
-
-export async function updateDidacticContent(id: string, entity: DidaticContentDto): Promise<DidaticContent> {
-  const formData = dtoToFormData(entity);
-  const response = await apiClient.put<DidaticContent>(
-    `${resource}/${id}`,
-    formData,
-    {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    }
-  );
-
-  return response.data;
-}
+const headers: CrudHeadersConfig = {
+  creatable: {
+    'Content-Type': 'multipart/form-data',
+  },
+  updatable: {
+    'Content-Type': 'multipart/form-data',
+  },
+};
 
 
-export async function deleteDidacticContent(id: string): Promise<void> {
-  await apiClient.delete<void>(
-    `${resource}/${id}`,
-  );
-}
+const crudOperations = restCrud<DidaticContent, DidaticContentDto, string>(
+  apiClient,
+  resource,
+  {
+    headers,
+    dtoTranformer,
+  }
+);
 
 
-export const operationDidacticContent: CrudOperations<DidaticContent, DidaticContentDto, string> = {
-  page: pageDidacticContent,
-  find: findDidacticContent,
-  findMany: findManyDidacticContent,
-  count: countDidacticContent,
-  exist: existDidacticContent,
-  create: createDidacticContent,
-  update: updateDidacticContent,
-  delete: deleteDidacticContent,
+export const didacticContentService = {
+  ...crudOperations,
+  getImage,
 };

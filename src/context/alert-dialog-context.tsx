@@ -19,33 +19,27 @@ import {
 import {Loader2} from "lucide-react";
 
 // eslint-disable-next-line react-refresh/only-export-components
-export enum DialogType {
-  SUCCESS = "success",
-  ERROR = "error",
-  WARNING = "warning",
-  INFO = "info",
-  QUESTION = "question",
-}
+export type DialogType = "success" | "error" | "warning" | "info" | "question";
 
 type AsyncVoidFunction = () => Promise<void>;
 type CallbackFunction = () => void;
 type DialogCallback = AsyncVoidFunction | CallbackFunction;
 
 export interface DialogTypeArgs {
-  [DialogType.SUCCESS]: {
+  "success": {
     onConfirm?: DialogCallback;
   }
-  [DialogType.ERROR]: {
+  "error": {
     onConfirm?: DialogCallback;
     retry?: DialogCallback;
   }
-  [DialogType.WARNING]: {
+  "warning": {
     onConfirm?: DialogCallback;
   }
-  [DialogType.INFO]: {
+  "info": {
     onConfirm?: DialogCallback;
   }
-  [DialogType.QUESTION]: {
+  "question": {
     onConfirm: DialogCallback;
     onCancel?: DialogCallback;
   }
@@ -90,8 +84,7 @@ type DialogState<T extends DialogType = DialogType> = {
 } & AlertDialogConfigurer<T>;
 
 
-// eslint-disable-next-line react-refresh/only-export-components
-export const AlertDialogContext = createContext<AlertDialogContextType | null>(null);
+const AlertDialogContext = createContext<AlertDialogContextType | null>(null);
 
 export const AlertDialogProvider = ({children}: Readonly<PropsWithChildren>) => {
   const [dialogs, setDialogs] = useState<DialogState[]>([]);
@@ -139,11 +132,11 @@ export const AlertDialogProvider = ({children}: Readonly<PropsWithChildren>) => 
         await executeCallback(dialog.onConfirm);
       }
 
-      if (action === 'cancel' && isDialogTypeConfig(dialog, DialogType.QUESTION) && dialog.onCancel) {
+      if (action === 'cancel' && isDialogTypeConfig(dialog, "question") && dialog.onCancel) {
         await executeCallback(dialog.onCancel);
       }
 
-      if (action === 'retry' && isDialogTypeConfig(dialog, DialogType.ERROR) && dialog.retry) {
+      if (action === 'retry' && isDialogTypeConfig(dialog, "error") && dialog.retry) {
         await executeCallback(dialog.retry);
       }
 
@@ -174,7 +167,7 @@ export const AlertDialogProvider = ({children}: Readonly<PropsWithChildren>) => 
               <AlertDialogDescription>{dialog.description}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              {isDialogTypeConfig(dialog, DialogType.QUESTION) && (
+              {isDialogTypeConfig(dialog, "question") && (
                 <AlertDialogCancel
                   onClick={() => handleAction(dialog, 'cancel')}
                   disabled={thisDialogLoading}
@@ -186,7 +179,7 @@ export const AlertDialogProvider = ({children}: Readonly<PropsWithChildren>) => 
                   )}
                 </AlertDialogCancel>
               )}
-              {isDialogTypeConfig(dialog, DialogType.ERROR) && dialog.retry && (
+              {isDialogTypeConfig(dialog, "error") && dialog.retry && (
                 <AlertDialogAction
                   onClick={() => handleAction(dialog, 'retry')}
                   disabled={thisDialogLoading}
@@ -204,7 +197,7 @@ export const AlertDialogProvider = ({children}: Readonly<PropsWithChildren>) => 
                 {isLoading(dialog.id, 'confirm') && (
                   <Loader2 className="animate-spin mr-2"/>
                 )}
-                {dialog.type === DialogType.QUESTION ? 'Aceptar' : 'Ok'}
+                {dialog.type === "question" ? 'Aceptar' : 'Ok'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

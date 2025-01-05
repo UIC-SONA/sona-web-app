@@ -1,9 +1,9 @@
 "use client";
 
 import {cn} from "@/lib/utils";
-import {CalendarRef} from "@/utils/data";
 import {Button} from "@/components/ui/button";
 import {
+  CalendarRef,
   goNext,
   goPrev,
   goToday,
@@ -12,7 +12,7 @@ import {
   handleYearChange,
   setView,
 } from "@/utils/calendar-utils";
-import {useState} from "react";
+import {ComponentProps, useEffect, useState} from "react";
 import {
   Check,
   ChevronLeft,
@@ -38,38 +38,58 @@ import {
 
 import {Input} from "@/components/ui/input";
 import {Tabs, TabsList, TabsTrigger} from "@/components/ui/tabs";
+import {DatesSetArg} from "@fullcalendar/core";
 
-interface CalendarNavProps {
-  calendarRef: CalendarRef;
-  viewedDate: Date;
+interface CalendarState {
+  selectedDay: number;
+  selectedMonth: number;
+  selectedYear: number;
+  daysInMonth: number;
+  days: number[];
+  months: MonthRepresation[];
 }
 
-export default function EventCalendarNav(
+
+interface CalendarNavProps extends ComponentProps<"div"> {
+  calendarRef: CalendarRef;
+}
+
+export default function FullCalendarController(
   {
     calendarRef,
-    viewedDate,
+    className,
+    ...props
   }: Readonly<CalendarNavProps>
 ) {
+
+  const [viewedDate, setViewedDate] = useState(new Date());
   const [currentView, setCurrentView] = useState("timeGridWeek");
-
-  const selectedDay = viewedDate.getDate();
-  const selectedMonth = viewedDate.getMonth() + 1;
-  const selectedYear = viewedDate.getFullYear();
-
-  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-
   const [daySelectOpen, setDaySelectOpen] = useState(false);
   const [monthSelectOpen, setMonthSelectOpen] = useState(false);
+  const [state, setState] = useState<CalendarState>(getCalendarState(viewedDate));
 
 
-  const days = getDaysInMonth(daysInMonth);
-  const months = getMonths("es");
+  const {selectedDay, selectedMonth, selectedYear, days, months} = state;
+
+  useEffect(() => {
+    if (!calendarRef.current) return;
+
+    const calendarApi = calendarRef.current.getApi();
+    calendarApi.on("datesSet", (info: DatesSetArg) => {
+      setViewedDate(info.start);
+    });
+
+  }, [calendarRef]);
+
+  useEffect(() => {
+    setState(getCalendarState(viewedDate));
+  }, [viewedDate]);
 
   return (
-    <div className="flex flex-wrap min-w-full justify-center gap-3 px-10 ">
+    <div
+      className={cn("flex flex-wrap min-w-full justify-center gap-3 ", className)}
+      {...props}>
       <div className="flex flex-row space-x-1">
-        {/* Navigate to previous date interval */}
-
         <Button
           variant="ghost"
           className="w-8"
@@ -78,15 +98,6 @@ export default function EventCalendarNav(
         >
           <ChevronLeft className="h-4 w-4"/>
         </Button>
-
-        {/* Day Lookup */}
-
-        {/*<CommandDialog*/}
-        {/*  */}
-        {/*>*/}
-
-        {/*</CommandDialog>*/}
-
         {currentView == "timeGridDay" && (
           <Popover open={daySelectOpen} onOpenChange={setDaySelectOpen} modal={true}>
             <PopoverTrigger asChild>
@@ -96,13 +107,14 @@ export default function EventCalendarNav(
               >
                 {selectedDay
                   ? days.find((day) => day === selectedDay)
-                  : "Select day..."}
+                  : "Seleccione un dia"
+                }
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50"/>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[200px] p-0">
               <Command>
-                <CommandInput  onKeyDown={(e) => e.stopPropagation()} placeholder="Buscar día..."/>
+                <CommandInput onKeyDown={(e) => e.stopPropagation()} placeholder="Buscar día..."/>
                 <CommandList>
                   <CommandEmpty>No day found.</CommandEmpty>
                   <CommandGroup>
@@ -137,9 +149,6 @@ export default function EventCalendarNav(
           </Popover>
         )}
 
-        {/* Month Lookup */}
-
-
         <Popover open={monthSelectOpen} onOpenChange={setMonthSelectOpen} modal={true}>
           <PopoverTrigger asChild>
             <Button
@@ -155,9 +164,9 @@ export default function EventCalendarNav(
           </PopoverTrigger>
           <PopoverContent className="w-[200px] p-0">
             <Command>
-              <CommandInput placeholder="Search month..."/>
+              <CommandInput placeholder="Buscar mes..."/>
               <CommandList>
-                <CommandEmpty>No month found.</CommandEmpty>
+                <CommandEmpty>No se encontraron meses</CommandEmpty>
                 <CommandGroup>
                   {months.map((month) => (
                     <CommandItem
@@ -187,16 +196,12 @@ export default function EventCalendarNav(
           </PopoverContent>
         </Popover>
 
-        {/* Year Lookup */}
-
         <Input
-          className="w-[75px] md:w-[85px] text-xs md:text-sm font-semibold"
+          className="w-[75px] md:w-[85px] text-xs md:text-sm font-semibold bg-background"
           type="number"
           value={selectedYear}
           onChange={(value) => handleYearChange(calendarRef, viewedDate, value)}
         />
-
-        {/* Navigate to next date interval */}
 
         <Button
           variant="ghost"
@@ -211,8 +216,6 @@ export default function EventCalendarNav(
       </div>
 
       <div className="flex flex-wrap gap-3 justify-center">
-        {/* Button to go to current date */}
-
         <Button
           className=" text-xs md:text-sm"
           variant="outline"
@@ -235,7 +238,7 @@ export default function EventCalendarNav(
             >
               <GalleryVertical className="h-5 w-5"/>
               {currentView === "timeGridDay" && (
-                <p className="text-xs md:text-sm">Day</p>
+                <p className="text-xs md:text-sm">Dia</p>
               )}
             </TabsTrigger>
             <TabsTrigger
@@ -247,7 +250,7 @@ export default function EventCalendarNav(
             >
               <Tally3 className="h-5 w-5"/>
               {currentView === "timeGridWeek" && (
-                <p className="text-xs md:text-sm">Week</p>
+                <p className="text-xs md:text-sm">Semana</p>
               )}
             </TabsTrigger>
             <TabsTrigger
@@ -259,7 +262,7 @@ export default function EventCalendarNav(
             >
               <Table className="h-5 w-5 rotate-90"/>
               {currentView === "dayGridMonth" && (
-                <p className="text-xs md:text-sm">Month</p>
+                <p className="text-xs md:text-sm">Mes</p>
               )}
             </TabsTrigger>
           </TabsList>
@@ -271,6 +274,23 @@ export default function EventCalendarNav(
   );
 }
 
+function getCalendarState(viewedDate: Date) {
+  const selectedDay = viewedDate.getDate();
+  const selectedMonth = viewedDate.getMonth() + 1;
+  const selectedYear = viewedDate.getFullYear();
+  const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+  const days = getDaysInMonth(daysInMonth);
+  const months = getMonths("es");
+
+  return {
+    selectedDay,
+    selectedMonth,
+    selectedYear,
+    daysInMonth,
+    days,
+    months,
+  };
+}
 
 interface MonthRepresation {
   ordinal: number,

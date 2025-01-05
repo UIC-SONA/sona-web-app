@@ -1,44 +1,33 @@
 import BreadcrumbSubLayout from "@/layout/breadcrumb-sub-layout.tsx";
 import {
-  createProfessionalSchedule,
-  deleteProfessionalSchedule,
-  getSchedulesByProfessionalId,
   ProfessionalSchedule,
   ProfessionalScheduleDto,
-  updateProfessionalSchedule
+  professionalScheduleService,
 } from "@/services/professional-schedule-service.ts";
 import {
   Authority,
-  pageUser,
-  User
+  User,
+  userService
 } from "@/services/user-service.ts";
-import EventCalendar from "@/components/full-calendar/event-calendar.tsx";
+import FullCalendarImproved from "@/components/full-calendar/full-calendar-improved.tsx";
 import {
   Dispatch,
-  SetStateAction,
-  useCallback,
   useEffect,
+  SetStateAction,
+  useRef,
   useState
 } from "react";
-import {Combobox} from "@/components/ui/combobox.tsx";
+import {ComboboxRemote} from "@/components/ui/combobox.tsx";
 import {
   EventChangeArg,
   EventClickArg,
   EventInput
 } from "@fullcalendar/core";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from "@/components/ui/alert-dialog.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
 import {
+  Calendar,
   EditIcon,
-  Plus,
+  LoaderCircle,
   TrashIcon
 } from "lucide-react";
 import {Button} from "@/components/ui/button.tsx";
@@ -51,39 +40,59 @@ import {
 } from "@/components/ui/form.tsx";
 import {z} from "zod";
 import {CrudSchema} from "@/components/crud/crud-common.ts";
-import {cn} from "@/lib/utils.ts";
-import {
-  format,
-  parse,
-  parseISO
-} from "date-fns";
+import {cn, dispatchAsyncStates, getCSSVariableValue, getPeriod} from "@/lib/utils.ts";
 import {Input} from "@/components/ui/input.tsx";
 import {es} from 'date-fns/locale/es';
 import {
   CreateForm,
   DeleteForm,
-  FormComponentProps, UpdateForm
+  FormComponentProps,
+  UpdateForm
 } from "@/components/crud/crud-forms.tsx";
 import {DateTimePicker} from "@/components/ui/date-picker.tsx";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog.tsx";
+import {
+  AppointmentsRange,
+  appointmentsService
+} from "@/services/appointments-service.ts";
+import {Switch} from "@/components/ui/switch.tsx";
+import {Label} from "@/components/ui/label.tsx";
+import {useTheme} from "@/context/theme-context.tsx";
+import FullCalendar from "@fullcalendar/react";
+import FullCalendarController from "@/components/full-calendar/full-calendar-controller.tsx";
+import {Card} from "@/components/ui/card.tsx";
 
 export default function ProfessionalSchedulePage() {
   const {authenticated} = useAuth();
   if (!authenticated) return null;
 
-  const [schedules, setSchedules] = useState<ProfessionalSchedule[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [professionals, setProfessionals] = useState<User[]>([]);
-  const [professional, setProfessional] = useState<User | undefined>();
-  const [range, setRange] = useState({from: new Date(), to: new Date()});
+  const {theme} = useTheme();
 
   const [schedule, setSchedule] = useState<ProfessionalSchedule | undefined>();
   const [oldSchedule, setOldSchedule] = useState<ProfessionalSchedule | undefined>();
+  const [schedules, setSchedules] = useState<ProfessionalSchedule[]>([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(false);
+
+  const [professional, setProfessional] = useState<User | undefined>();
+  const [range, setRange] = useState({from: new Date(), to: new Date()});
+
+  const [appointments, setAppointments] = useState<AppointmentsRange[]>([]);
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
+  const [showAppointments, setShowAppointments] = useState(false);
 
   const [scheduleViewOpen, setScheduleViewOpen] = useState(false);
   const [createScheduleOpen, setCreateScheduleOpen] = useState(false);
   const [updateScheduleOpen, setUpdateScheduleOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
+  const calendarRef = useRef<FullCalendar | null>(null);
 
   const findSchedule = (id: string) => {
     return schedules.find((schedule) => schedule.id.toString() === id) as ProfessionalSchedule;
@@ -101,106 +110,125 @@ export default function ProfessionalSchedulePage() {
     setSchedules(schedules.map((s) => s.id === schedule.id ? schedule : s));
   }
   const handleEventClick = (info: EventClickArg) => {
-    const schedule = findSchedule(info.event.id);
-    setSchedule(schedule);
-    setOldSchedule(undefined);
-    setScheduleViewOpen(true);
+    const schedule = info.event.extendedProps.schedule;
+    if (schedule) {
+      setSchedule(schedule as ProfessionalSchedule);
+      setOldSchedule(undefined);
+      setScheduleViewOpen(true);
+    }
   }
 
   const handleEventChange = (info: EventChangeArg) => {
-    const oldSchedule = findSchedule(info.event.id);
 
-    const formatedDate = format(info.event.start!, "yyyy-MM-dd");
+    const {start, end, extendedProps} = info.event;
 
-    const newSchedule: ProfessionalSchedule = {
-      ...findSchedule(info.event.id),
-      date: formatedDate,
-      fromHour: info.event.start?.getHours() ?? 0,
-      toHour: info.event.end?.getHours() ?? 0,
-    };
+    if (!start || !end || !extendedProps) return;
 
-    setSchedule(newSchedule);
-    setOldSchedule(oldSchedule);
-    updateSchedule(newSchedule);
-    setUpdateScheduleOpen(true);
-  }
+    const schedule = extendedProps.schedule;
+    if (schedule) {
 
-  const loadProfessionals = useCallback(async (search?: string) => {
-    setLoading(true);
-    try {
-      const professionals = await pageUser({
-        search,
-        page: 0,
-        size: 15,
-        authorities: [Authority.LEGAL_PROFESSIONAL, Authority.MEDICAL_PROFESSIONAL],
-      });
+      const oldSchedule = schedule as ProfessionalSchedule;
 
-      setProfessionals(professionals.content);
-    } finally {
-      setLoading(false);
+      const newSchedule: ProfessionalSchedule = {
+        ...findSchedule(info.event.id),
+        date: start,
+        fromHour: start.getHours(),
+        toHour: end.getHours(),
+      };
+
+      setSchedule(newSchedule);
+      setOldSchedule(oldSchedule);
+      updateSchedule(newSchedule);
+      setUpdateScheduleOpen(true);
     }
-  }, []);
-
+  }
 
   useEffect(() => {
     if (!professional) return;
-
-    const loadSchedules = async () => {
-      if (!professional) return;
-
-      const schedules = await getSchedulesByProfessionalId(professional.id, range.from, range.to);
-      setSchedules(schedules);
-    }
-
-    loadSchedules().then();
+    dispatchAsyncStates(() => professionalScheduleService.getByProfessional(professional.id, range.from, range.to), setSchedules, setLoadingSchedules);
+    dispatchAsyncStates(() => appointmentsService.getAppointmentsRangesByProfessional(professional.id, range.from, range.to), setAppointments, setLoadingAppointments);
   }, [professional, range]);
 
-
   useEffect(() => {
-    loadProfessionals().then();
-  }, []);
-
-
-  const events = schedules.map(scheduleToEventInput);
+    setAppointments([...appointments]);
+  }, [theme]);
 
 
   return (
     <BreadcrumbSubLayout items={["Professionales", "Horarios de atención"]}>
-      <h1 className="text-2xl font-bold mb-4">Horarios de atención</h1>
-      <p className="mb-2">Seleccione un profesional para ver sus horarios de atención.</p>
-      <Combobox
-        className="w-full"
-        value={professional}
-        items={professionals}
-        onSelect={setProfessional}
-        isLoading={loading}
-        onSearch={loadProfessionals}
-        debounceTime={300}
-        onSearchInputChange={() => setLoading(true)}
-        compare={(a, b) => a.id === b.id}
-        toComboboxItem={(professional) => {
-          return {
-            value: professional.id.toString(),
-            label: `${professional.firstName} ${professional.lastName}`,
-          };
-        }}
-      />
-      <Button onClick={() => setCreateScheduleOpen(true)} className={cn("mt-4", !professional && "hidden")}>
-        <Plus/>
-        Agregar horario
-      </Button>
-      <div className="mt-6">
-        <EventCalendar
-          slotMinTime="00:00:00"
-          slotMaxTime="24:00:00"
-          events={events}
-          eventClick={handleEventClick}
-          eventChange={handleEventChange}
-          cardCalendarProps={{
-            className: "h-[500px] overflow-y-scroll p-3",
-          }}
-          datesSet={(arg) => setRange({from: arg.start, to: arg.end})}
-        />
+
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold">Horarios de atención</h1>
+
+        <p className="text-muted-foreground text-sm">
+          Seleccione un profesional para ver sus horarios de atención.
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-5 gap-4">
+          <div className="col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4">
+            <ComboboxRemote<User>
+              className="w-full"
+              value={professional}
+              onSelect={setProfessional}
+              fetchItems={async (search) => {
+
+                const professionals = await userService.page({
+                  search,
+                  page: 0,
+                  size: 15,
+                  filters: {
+                    authorities: [Authority.LEGAL_PROFESSIONAL, Authority.MEDICAL_PROFESSIONAL]
+                  },
+                });
+
+                return professionals.content;
+              }}
+              comboboxItem={(professional) => ({
+                value: professional.id.toString(),
+                label: `${professional.firstName} ${professional.lastName}`
+              })}
+            />
+          </div>
+          <div className="col-span-1 md:col-span-2 lg:col-span-1">
+            <Button
+              className="w-full"
+              onClick={() => setCreateScheduleOpen(true)} disabled={!professional}
+            >
+              <Calendar className="mr-2 h-4 w-4"/>
+              Agregar horario
+            </Button>
+          </div>
+        </div>
+
+        <div className={cn(!professional && "hidden", "flex items-center gap-4")}>
+          <Switch
+            checked={showAppointments}
+            onCheckedChange={setShowAppointments}
+          />
+          <Label>Mostrar citas</Label>
+          <LoaderCircle className={cn((loadingSchedules || loadingAppointments) ? "animate-spin" : "invisible")}/>
+        </div>
+      </div>
+
+      <div className="mt-4 relative">
+        <div className="absolute bottom-4 transform z-10">
+          <FullCalendarController
+            calendarRef={calendarRef}
+          />
+        </div>
+        <Card className="h-[500px] overflow-y-scroll p-3 mt-4">
+          <FullCalendarImproved
+            locale={es}
+            ref={calendarRef}
+            slotMinTime="00:00:00"
+            slotMaxTime="24:00:00"
+            events={toEventsInputs(schedules, showAppointments ? appointments : [])}
+            eventClick={handleEventClick}
+            eventChange={handleEventChange}
+            datesSet={(arg) => setRange({from: arg.start, to: arg.end})}
+          />
+        </Card>
+
         <ScheduleView
           schedule={schedule}
           open={scheduleViewOpen}
@@ -218,19 +246,22 @@ export default function ProfessionalSchedulePage() {
           open={updateScheduleOpen}
           setOpen={setUpdateScheduleOpen}
           schedule={schedule}
+          setSchedule={setSchedule}
           oldSchedule={oldSchedule}
           updateSchedule={updateSchedule}
         />
-        <ScheduleDeleteForm
+        <DeleteScheduleForm
           open={deleteOpen}
           setOpen={setDeleteOpen}
           schedule={schedule}
           removeSchedule={removeSchedule}
+          setScheduleViewOpen={setScheduleViewOpen}
         />
       </div>
     </BreadcrumbSubLayout>
   );
 }
+
 
 interface ScheduleViewProps {
   schedule?: ProfessionalSchedule;
@@ -245,30 +276,31 @@ function ScheduleView({schedule, open, setOpen, setDeleteOpen, setUpdateSchedule
   const professional = schedule?.professional;
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex justify-between items-center">
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent
+      >
+        <DialogHeader>
+          <DialogTitle className="flex justify-between items-center">
             Horario de atención de {professional?.firstName} {professional?.lastName}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {schedule?.date}
+          </DialogTitle>
+          <DialogDescription>
+            {schedule?.date.toLocaleDateString("es-ES")}
             <br/>
-            {getPeriod(schedule?.fromHour)} - {getPeriod(schedule?.toHour)}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogAction onClick={() => setDeleteOpen(true)}>
+            {schedule?.fromHour + " " + getPeriod(schedule?.fromHour)} - {schedule?.fromHour + " " + getPeriod(schedule?.toHour)}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button onClick={() => setDeleteOpen(true)}>
             <TrashIcon/>
             Eliminar
-          </AlertDialogAction>
-          <AlertDialogAction onClick={() => setUpdateScheduleOpen(true)}>
+          </Button>
+          <Button onClick={() => setUpdateScheduleOpen(true)}>
             <EditIcon/>
             Editar
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -286,9 +318,16 @@ const scheduleSchema: CrudSchema<ProfessionalScheduleDto> = z.object({
   professionalId: z.number(),
 });
 
-function CreateScheduleForm({open, setOpen, professional, addSchedule}: Readonly<CreateScheduleFormProps>) {
+function CreateScheduleForm(
+  {
+    open,
+    setOpen,
+    professional,
+    addSchedule
+  }: Readonly<CreateScheduleFormProps>
+) {
   return <CreateForm
-    create={createProfessionalSchedule}
+    create={professionalScheduleService.create}
     open={open}
     setOpen={setOpen}
     title="Agregar horario de atención"
@@ -317,14 +356,24 @@ interface UpdateScheduleFormProps {
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
   schedule?: ProfessionalSchedule;
+  setSchedule: Dispatch<SetStateAction<ProfessionalSchedule | undefined>>;
   oldSchedule?: ProfessionalSchedule
   updateSchedule: (schedule: ProfessionalSchedule) => void;
 }
 
-function UpdateScheduleForm({open, setOpen, schedule, oldSchedule, updateSchedule}: Readonly<UpdateScheduleFormProps>) {
+function UpdateScheduleForm(
+  {
+    open,
+    setOpen,
+    schedule,
+    oldSchedule,
+    updateSchedule,
+    setSchedule
+  }: Readonly<UpdateScheduleFormProps>
+) {
 
   const defaultValues = schedule ? {
-    date: parseISO(schedule.date),
+    date: schedule.date,
     fromHour: schedule.fromHour,
     toHour: schedule.toHour,
     professionalId: schedule.professional.id,
@@ -343,7 +392,7 @@ function UpdateScheduleForm({open, setOpen, schedule, oldSchedule, updateSchedul
 
   return <UpdateForm
     entity={schedule as ProfessionalSchedule}
-    update={updateProfessionalSchedule}
+    update={professionalScheduleService.update}
     open={open}
     setOpen={setOpen}
     title="Actualizar horario"
@@ -359,9 +408,9 @@ function UpdateScheduleForm({open, setOpen, schedule, oldSchedule, updateSchedul
     }}
     onSuccess={(schedule) => {
       updateSchedule(schedule);
+      setSchedule(schedule);
     }}
     onCancel={resetSchedule}
-    onCloseErrorDialog={resetSchedule}
   />
 }
 
@@ -370,9 +419,10 @@ interface ScheduleDeleteFormProps {
   setOpen: Dispatch<SetStateAction<boolean>>;
   schedule?: ProfessionalSchedule;
   removeSchedule: (schedule: ProfessionalSchedule) => void;
+  setScheduleViewOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-function ScheduleDeleteForm({open, setOpen, schedule, removeSchedule}: Readonly<ScheduleDeleteFormProps>
+function DeleteScheduleForm({open, setOpen, schedule, removeSchedule, setScheduleViewOpen}: Readonly<ScheduleDeleteFormProps>
 ) {
   return <DeleteForm
     entity={schedule}
@@ -380,13 +430,14 @@ function ScheduleDeleteForm({open, setOpen, schedule, removeSchedule}: Readonly<
     setOpen={setOpen}
     title="Eliminar horario"
     description="¿Está seguro que desea eliminar el horario de atención?"
-    delete={deleteProfessionalSchedule}
+    delete={professionalScheduleService.delete}
     toastAction={{
       title: "Horario eliminado",
       description: "El horario de atención ha sido eliminado correctamente.",
     }}
     onSuccess={() => {
       removeSchedule(schedule as ProfessionalSchedule);
+      setScheduleViewOpen(false);
     }}
   />
 }
@@ -408,7 +459,7 @@ function FormComponent({form, entity, professional}: Readonly<FormScheduleProps>
     if (!entity) return;
 
     const defaultValues = {
-      date: parseISO(entity.date),
+      date: entity.date,
       fromHour: entity.fromHour,
       toHour: entity.toHour,
       professionalId: entity.professional.id,
@@ -469,28 +520,51 @@ function FormComponent({form, entity, professional}: Readonly<FormScheduleProps>
   </div>
 }
 
-function scheduleToEventInput(schedule: ProfessionalSchedule): EventInput {
-  const date = parse(schedule.date, "yyyy-MM-dd", new Date());
-  const from = new Date(date.getFullYear(), date.getMonth(), date.getDate(), schedule.fromHour);
-  const to = new Date(date.getFullYear(), date.getMonth(), date.getDate(), schedule.toHour);
-  const title = `${getPeriod(schedule.fromHour)} - ${getPeriod(schedule.toHour)}`;
+function toEventsInputs(schedule: ProfessionalSchedule[], appoinments: AppointmentsRange[]): EventInput[] {
   const now = new Date();
-  return {
-    id: schedule.id.toString(),
-    end: to,
-    start: from,
-    title: title,
-    backgroundColor: "#3182ce",
-    description: title,
-    editable: now < from,
-  };
-}
 
-function getPeriod(number?: number): string {
-  if (number === undefined) return "";
-  if (number >= 12) {
-    return `${number} PM`;
-  } else {
-    return `${number} AM`;
-  }
+  const scheduleColor = getCSSVariableValue("--primary");
+  const scheduletextColor = getCSSVariableValue("--primary-foreground");
+
+  const events = schedule.map<EventInput>((schedule) => {
+    const date = schedule.date;
+    const from = new Date(date.getFullYear(), date.getMonth(), date.getDate(), schedule.fromHour);
+    const to = new Date(date.getFullYear(), date.getMonth(), date.getDate(), schedule.toHour);
+    const title = "Horario de atención";
+
+
+    return {
+      id: schedule.id.toString(),
+      end: to,
+      start: from,
+      title: title,
+      backgroundColor: `hsl(${scheduleColor})`,
+      textColor: `hsl(${scheduletextColor})`,
+      description: title,
+      editable: now < from,
+      extendedProps: {schedule},
+    };
+  });
+
+  const appoinmentsColor = getCSSVariableValue("--secondary");
+  const appoinmentsTextColor = getCSSVariableValue("--secondary-foreground");
+
+  const appoinmentsEvents = appoinments.map((appoinment) => {
+    const from = new Date(appoinment.from);
+    const to = new Date(appoinment.to);
+    const title = 'Cita reservada';
+    return {
+      id: `${appoinment.from}-${appoinment.to}`,
+      end: to,
+      start: from,
+      title: title,
+      backgroundColor: `hsl(${appoinmentsColor})`,
+      textColor: `hsl(${appoinmentsTextColor})`,
+      description: title,
+      editable: false,
+      extendedProps: {appoinment},
+    };
+  });
+
+  return [...events, ...appoinmentsEvents];
 }

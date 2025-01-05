@@ -43,7 +43,10 @@ export default function AuthProvider({children}: Readonly<PropsWithChildren>) {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const token = await updateAndLoadAccessToken(() => setError({title: 'Sesión expirada', description: 'Por favor, inicia sesión nuevamente'}));
+        const token = await updateAndLoadAccessToken(() => setError({
+          title: 'Sesión expirada',
+          description: 'Por favor, inicia sesión nuevamente'
+        }));
         if (token) setAuthenticated(true);
       } catch (error) {
         const err = extractError(error);

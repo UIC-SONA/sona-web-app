@@ -1,7 +1,8 @@
-"use client";
+import {ChangeEvent, Dispatch, RefObject, SetStateAction} from "react";
+import FullCalendar from "@fullcalendar/react";
 
-import {ChangeEvent, Dispatch, SetStateAction} from "react";
-import {CalendarRef} from "./data";
+
+export type CalendarRef = RefObject<FullCalendar | null>;
 
 export function goPrev(calendarRef: CalendarRef) {
   const calendarApi = calendarRef.current!.getApi();

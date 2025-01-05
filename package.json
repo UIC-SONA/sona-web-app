@@ -36,6 +36,7 @@
     "@radix-ui/react-switch": "^1.1.2",
     "@radix-ui/react-tabs": "^1.1.2",
     "@radix-ui/react-toast": "^1.2.4",
+    "@radix-ui/react-toggle": "^1.1.1",
     "@radix-ui/react-tooltip": "^1.1.4",
     "@tanstack/react-query": "^5.62.7",
     "@tanstack/react-table": "^8.20.5",
@@ -76,5 +77,6 @@
   },
   "overrides": {
     "@radix-ui/react-focus-scope": "1.0.4"
-  }
+  },
+  "packageManager": "pnpm@8.15.5+sha1.a58c038faac410c947dbdb93eb30994037d0fce2"
 }

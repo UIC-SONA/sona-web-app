@@ -10,7 +10,7 @@ import {
   useLayoutEffect
 } from "react";
 import {cn} from "@/lib/utils.ts";
-import {DialogType, useAlertDialog} from "@/context/alert-dialog-context.tsx";
+import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
 
@@ -36,7 +36,7 @@ export default function AuthGuard() {
 
   useEffect(() => {
     if (error) pushAlertDialog({
-      type: DialogType.ERROR,
+      type: "error",
       title: "Error de autenticación",
       description: error.description,
       onConfirm: () => {

@@ -1,13 +1,10 @@
 import BreadcrumbSubLayout from "@/layout/breadcrumb-sub-layout.tsx";
-import CrudTable from "@/components/crud/crud-table.tsx";
+import CrudTable, {TableFactory} from "@/components/crud/crud-table.tsx";
 import {
-  Forum,
-  ForumDto,
-  pagePosts,
-  deletePost,
-  findPost
+  Post,
+  PostDto,
+  postService
 } from "@/services/post-service.ts";
-import {ColumnDef} from "@tanstack/react-table";
 import {
   ClickToShowUUID,
   Truncate
@@ -15,63 +12,64 @@ import {
 import {useAuth} from "@/context/auth-context.tsx";
 
 
-const columns: ColumnDef<Forum>[] = [
-  {
-    header: "Id",
-    accessorKey: "id",
-    enableSorting: true,
-    cell: ({row}) => {
-      return <ClickToShowUUID id={row.original.id}/>
-    }
-  },
-  {
-    header: "Contenido",
-    accessorKey: "content",
-    enableSorting: true,
-    cell: ({row}) => {
-      return <Truncate text={row.original.content}/>
-    }
-  },
-  {
-    header: "Publicado",
-    accessorKey: "createdAt",
-    cell: ({row}) => {
-      return new Date(row.original.createdAt).toLocaleString();
-    }
-  },
-  {
-    header: "Likes",
-    accessorKey: "likedBy",
-    enableSorting: true,
-    cell: ({row}) => {
-      return row.original.likedBy.length;
-    },
-  },
-  {
-    header: "Reportes",
-    accessorKey: "reportedBy",
-    enableSorting: true,
-    cell: ({row}) => {
-      return row.original.reportedBy.length;
-    },
-  },
-];
-
 export default function ForumPage() {
   const {authenticated} = useAuth();
   if (!authenticated) return null;
 
+  const table: TableFactory<Post, string> = {
+    columns: [
+      {
+        header: "Id",
+        accessorKey: "id",
+        enableSorting: true,
+        cell: ({row}) => {
+          return <ClickToShowUUID id={row.original.id}/>
+        }
+      },
+      {
+        header: "Contenido",
+        accessorKey: "content",
+        enableSorting: true,
+        cell: ({row}) => {
+          return <Truncate text={row.original.content}/>
+        }
+      },
+      {
+        header: "Publicado",
+        accessorKey: "createdAt",
+        cell: ({row}) => {
+          return row.original.createdAt.toLocaleString();
+        }
+      },
+      {
+        header: "Likes",
+        accessorKey: "likedBy",
+        enableSorting: true,
+        cell: ({row}) => {
+          return row.original.likedBy.length;
+        },
+      },
+      {
+        header: "Reportes",
+        accessorKey: "reportedBy",
+        enableSorting: true,
+        cell: ({row}) => {
+          return row.original.reportedBy.length;
+        },
+      },
+    ]
+  }
+
   return (
     <BreadcrumbSubLayout items={["Foro"]}>
-      <CrudTable<Forum, ForumDto, string>
+      <CrudTable<Post, PostDto, string>
         title={"Foro"}
-        columns={columns}
         operations={{
-          find: findPost,
-          page: pagePosts,
-          delete: deletePost,
+          find: postService.find,
+          page: postService.page,
+          delete: postService.delete,
         }}
-        //form={form}
+        table={table}
       />
     </BreadcrumbSubLayout>
   );

@@ -49,8 +49,8 @@ const navItems: NavItem[] = [
     icon: BookOpen,
   },
   {
-    title: "Foros",
-    url: "/forum",
+    title: "Posts",
+    url: "/posts",
     icon: ThumbsUp,
   },
   {
@@ -65,7 +65,7 @@ const navItems: NavItem[] = [
     items: [
       {
         title: "Gestion",
-        url: "/professional",
+        url: "/professionals",
       },
       {
         title: "Horarios de atención",
@@ -79,12 +79,12 @@ const navItems: NavItem[] = [
     icon: Calendar,
     items: [
       {
-        title: "Medicas",
-        url: "#",
+        title: "Gestion",
+        url: "/appointments",
       },
       {
-        title: "Juridicas",
-        url: "#",
+        title: "Calendario",
+        url: "/appointments-calendar",
       }
     ],
   },

@@ -1,12 +1,9 @@
 import apiClient from "@/lib/axios.ts";
 import {Message} from "@/lib/types.ts";
-import {
-  CrudOperations,
-  Page,
-  PageQuery,
-  pageQueryToParams
-} from "@/lib/crud.ts";
+import {restCrud} from "@/lib/rest-crud.ts";
+import {Entity} from "@/lib/crud.ts";
 
+const resource = '/user';
 
 export interface BaseUser {
   username: string;
@@ -28,8 +25,7 @@ export enum Authority {
   USER = "USER",
 }
 
-export interface User {
-  id: number;
+export interface User extends Entity<number> {
   keycloakId: string;
   profilePicturePath: string;
   username: string;
@@ -47,11 +43,9 @@ export interface UserDto extends BaseUser {
 
 
 export interface UserFilter {
-  authorities?: Authority[];
+  authorities: Authority[];
 }
 
-
-const resource = '/user';
 
 export async function singUp(signUp: SingUp): Promise<Message> {
   const response = await apiClient.post<Message>(
@@ -62,7 +56,7 @@ export async function singUp(signUp: SingUp): Promise<Message> {
   return response.data;
 }
 
-export async function profilePicture(): Promise<string> {
+export async function getProfilePicture(): Promise<string> {
   const response = await apiClient.get<string>(
     `${resource}/profile-picture`,
     {
@@ -74,7 +68,7 @@ export async function profilePicture(): Promise<string> {
   return `data:${contentType};base64,${base64}`;
 }
 
-export async function uploadProfilePicture(file: File): Promise<Message> {
+export async function saveProfilePicture(file: File): Promise<Message> {
   const formData = new FormData();
   formData.append('file', file);
 
@@ -107,83 +101,30 @@ export async function profile(): Promise<User> {
   return response.data;
 }
 
-export async function pageUser(query: PageQuery<UserFilter>): Promise<Page<User>> {
-  const response = await apiClient.get<Page<User>>(
-    resource,
-    {
-      params: pageQueryToParams(query),
-    }
-  );
-
-  return response.data;
-}
-
-export async function findUser(id: number): Promise<User> {
-  const response = await apiClient.get<User>(
-    `${resource}/${id}`,
-  );
-
-  return response.data;
-}
-
-export async function findManyUser(ids: number[]): Promise<User[]> {
-  const response = await apiClient.post<User[]>(
-    `${resource}/many`,
-    ids,
-  );
-
-  return response.data;
-}
-
-export async function countUser(): Promise<number> {
-  const response = await apiClient.get<number>(
-    `${resource}/count`,
-  );
-
-  return response.data;
-}
-
-export async function existUser(id: number): Promise<boolean> {
-  const response = await apiClient.get<boolean>(
-    `${resource}/exist/${id}`,
-  );
-
-  return response.data;
-}
-
-export async function createUser(entity: UserDto): Promise<User> {
-  const response = await apiClient.post<User>(
-    resource,
-    entity,
-  );
-
-  return response.data;
-}
-
-export async function updateUser(id: number, entity: UserDto): Promise<User> {
-  const response = await apiClient.put<User>(
-    `${resource}/${id}`,
-    entity,
-  );
-
-  return response.data;
+function getAuthorityName(authority: Authority): string {
+  switch (authority) {
+    case Authority.ADMIN:
+      return "Administrador";
+    case Authority.ADMINISTRATIVE:
+      return "Administrativo";
+    case Authority.MEDICAL_PROFESSIONAL:
+      return "Profesional Médico";
+    case Authority.LEGAL_PROFESSIONAL:
+      return "Profesional Legal";
+    case Authority.USER:
+      return "Usuario";
+  }
 }
 
 
-export async function deleteUser(id: number): Promise<void> {
-  await apiClient.delete<void>(
-    `${resource}/${id}`,
-  );
-}
+const crudOperations = restCrud<User, UserDto, number, UserFilter>(apiClient, resource);
 
-export const operationUsers: CrudOperations<User, UserDto, number> = {
-  page: pageUser,
-  find: findUser,
-  findMany: findManyUser,
-  count: countUser,
-  exist: existUser,
-  create: createUser,
-  update: updateUser,
-  delete: deleteUser,
+export const userService = {
+  ...crudOperations,
+  profile,
+  getProfilePicture,
+  saveProfilePicture,
+  deleteProfilePicture,
+  singUp,
+  getAuthorityName,
 };
-

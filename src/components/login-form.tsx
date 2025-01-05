@@ -9,17 +9,17 @@ import {
 import onlyLogo from "@/assets/only_logo.png";
 import {Input} from "@/components/ui/input.tsx";
 import {Button} from "@/components/ui/button.tsx";
-import {Loader2, UserIcon} from "lucide-react";
+import {
+  Loader2,
+  UserIcon
+} from "lucide-react";
 import {
   Link,
   useNavigate
 } from "react-router";
 import {FormEvent, useState} from "react";
 import {extractError} from "@/lib/errors.ts";
-import {
-  DialogType,
-  useAlertDialog
-} from "@/context/alert-dialog-context.tsx";
+import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
 
 
@@ -41,7 +41,11 @@ export default function LoginForm() {
       navigate("/");
     } catch (error) {
       const err = extractError(error);
-      pushAlertDialog({type: DialogType.ERROR, title: err.title, description: err.description});
+      pushAlertDialog({
+        type: "error",
+        title: err.title,
+        description: err.description
+      });
     } finally {
       setLoading(false);
     }

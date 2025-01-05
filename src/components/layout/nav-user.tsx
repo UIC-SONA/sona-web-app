@@ -20,9 +20,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import {profilePicture, User} from "@/services/user-service.ts";
+import {getProfilePicture, User} from "@/services/user-service.ts";
 import {useEffect, useState} from "react";
-import {DialogType, useAlertDialog} from "@/context/alert-dialog-context.tsx";
+import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
 
 
@@ -37,14 +37,14 @@ export function NavUser({user}: Readonly<NavUserProps>) {
   const [profileImage, setProfileImage] = useState<string | null>(null)
 
   useEffect(() => {
-    profilePicture()
+    getProfilePicture()
       .then(setProfileImage)
       .catch(() => setProfileImage(null))
   }, [user.id])
 
   const logoutHandler = async () => {
     pushAlertDialog({
-      type: DialogType.QUESTION,
+      type: "question",
       title: "¿Seguro que deseas cerrar sesión?",
       description: "Si cierras sesión, tendrás que volver a iniciar sesión para acceder a tu cuenta.",
       onConfirm: async () => {

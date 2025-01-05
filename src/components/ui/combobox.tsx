@@ -1,7 +1,8 @@
 import {
   Check,
   ChevronsUpDown,
-  Loader2
+  Loader2,
+  X
 } from 'lucide-react'
 
 import {cn} from '@/lib/utils'
@@ -32,7 +33,7 @@ type ComboboxProps<T> = {
   value?: T
   onSelect: (value: T | undefined) => void
   items: T[]
-  toComboboxItem: (item: T) => ComboBoxItemType
+  comboboxItem: (item: T) => ComboBoxItemType
   compare?: (selectedValue: T, itemValue: T) => boolean
   searchPlaceholder?: string
   noResultsText?: string
@@ -40,10 +41,8 @@ type ComboboxProps<T> = {
   className?: ClassValue
   unselect?: boolean
   unselectText?: string
-  onSearch?: (search: string) => void
-  debounceTime?: number
-  onSearchInputChange?: (search: string) => void
-  isLoading?: boolean
+  onSearchValueChange?: (search: string) => void
+  loading?: boolean
   loadingText?: string
 }
 
@@ -56,28 +55,18 @@ export function Combobox<T>(
     value,
     onSelect,
     items,
-    toComboboxItem,
+    comboboxItem,
     compare = (selectedValue, itemValue) => selectedValue === itemValue,
     searchPlaceholder = 'Buscar',
     noResultsText = 'No hay resultados',
     selectItemText = 'Seleccionar',
     className,
-    unselect = false,
-    unselectText = 'Desmarcar',
-    onSearch,
-    debounceTime = 300,
-    onSearchInputChange,
-    isLoading = false,
+    onSearchValueChange,
+    loading = false,
     loadingText = 'Cargando...'
   }: Readonly<ComboboxProps<T>>
 ) {
   const [open, setOpen] = useState(false)
-
-  const handleOnSearchChange = useDebouncedCallback((search: string) => {
-    if (onSearch) {
-      onSearch(search)
-    }
-  }, debounceTime)
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={true}>
@@ -88,8 +77,21 @@ export function Combobox<T>(
           aria-expanded={open}
           className={cn('justify-between', className)}
         >
-          {value ? toComboboxItem(value).label : selectItemText}
-          <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50'/>
+          {value ? comboboxItem(value).label : selectItemText}
+          {value ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation()
+                onSelect(undefined)
+              }}
+              className="p-1 hover:bg-primary hover:text-white rounded-full hover:animate-pulse"
+            >
+              <X className="h-4 w-4 opacity-50 hover:opacity-100"/>
+            </button>
+          ) : (
+            <ChevronsUpDown className='h-4 w-4'/>
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -99,15 +101,10 @@ export function Combobox<T>(
         <Command>
           <CommandInput
             placeholder={searchPlaceholder}
-            onValueChange={(value) => {
-              handleOnSearchChange(value)
-              if (onSearchInputChange) {
-                onSearchInputChange(value)
-              }
-            }}
+            onValueChange={onSearchValueChange}
           />
           <ScrollArea className='max-h-[220px] overflow-auto'>
-            {isLoading ? (
+            {loading ? (
               <CommandEmpty>
                 <Loader2 className='mx-auto animate-spin h-8 w-8'/>
                 {loadingText}
@@ -116,26 +113,8 @@ export function Combobox<T>(
               <>
                 <CommandEmpty>{noResultsText}</CommandEmpty>
                 <CommandGroup>
-                  {unselect && (
-                    <CommandItem
-                      key='unselect'
-                      value=''
-                      onSelect={() => {
-                        onSelect(undefined)
-                        setOpen(false)
-                      }}
-                    >
-                      <Check
-                        className={cn(
-                          'mr-2 h-4 w-4',
-                          !value ? 'opacity-100' : 'opacity-0'
-                        )}
-                      />
-                      {unselectText}
-                    </CommandItem>
-                  )}
                   {items.map(item => {
-                    const comboBoxItem = toComboboxItem(item)
+                    const comboBoxItem = comboboxItem(item)
                     return (
                       <CommandItem
                         key={comboBoxItem.value}
@@ -164,3 +143,44 @@ export function Combobox<T>(
     </Popover>
   )
 }
+
+
+interface ComboboxRemoteProps<T> extends Omit<ComboboxProps<T>, 'items' | 'loading'> {
+  fetchItems: (string?: string) => Promise<T[]>
+  debounceTime?: number
+}
+
+export function ComboboxRemote<T>(
+  {
+    fetchItems,
+    debounceTime = 500,
+    onSearchValueChange,
+    ...props
+  }: Readonly<ComboboxRemoteProps<T>>
+) {
+  const [items, setItems] = useState<T[]>([])
+  const [loading, setLoading] = useState(false)
+
+  const handleOnSearchChange = useDebouncedCallback(async (search: string) => {
+    try {
+      setItems(await fetchItems(search))
+    } finally {
+      setLoading(false)
+    }
+  }, debounceTime)
+
+
+  return (
+    <Combobox<T>
+      {...props}
+      items={items}
+      loading={loading}
+      onSearchValueChange={(search) => {
+        setLoading(true);
+        handleOnSearchChange(search);
+        onSearchValueChange?.(search);
+      }}
+    />
+  )
+}
+

@@ -1,9 +1,7 @@
-import {ColumnDef} from "@tanstack/react-table";
 import {
-  operationTips,
   Tip,
   TipDto,
-  tipImage
+  tipsService
 } from "@/services/tip-service.ts";
 import {Checkbox} from "@/components/ui/checkbox.tsx";
 import {
@@ -25,108 +23,118 @@ import {Input} from "@/components/ui/input.tsx";
 import {Textarea} from "@/components/ui/textarea.tsx";
 import MultipleSelector from "@/components/ui/multiple-selector.tsx";
 import {Switch} from "@/components/ui/switch.tsx";
-import {FormComponentProps, FormDefFactory} from "@/components/crud/crud-forms.tsx";
-import CrudTable from "@/components/crud/crud-table.tsx";
+import {FormComponentProps} from "@/components/crud/crud-forms.tsx";
+import CrudTable, {FormFactory, TableFactory} from "@/components/crud/crud-table.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
-
-const columns: ColumnDef<Tip>[] = [
-  {
-    header: "Id",
-    accessorKey: "id",
-    enableSorting: true,
-    cell: ({row}) => {
-      return <ClickToShowUUID id={row.original.id}/>
-    }
-  },
-  {
-    header: "Título",
-    accessorKey: "title",
-    enableSorting: false,
-  },
-  {
-    header: "Resumen",
-    accessorKey: "summary",
-    enableSorting: false,
-    cell: ({row}) => {
-      return <Truncate text={row.original.summary}/>
-    }
-  },
-  {
-    header: "Descripción",
-    accessorKey: "description",
-    enableSorting: false,
-    cell: ({row}) => {
-      return <Truncate text={row.original.description}/>
-    }
-  },
-  {
-    header: "Tags",
-    accessorKey: "tags",
-    cell: ({row}) => {
-      return <ItemsOnRounded items={row.original.tags}/>
-    }
-  },
-  {
-    header: "Imagen",
-    accessorKey: "image",
-    cell: ({row}) => {
-      return <OpenImageModal fetcher={() => tipImage(row.original.id)} alt={row.original.title}/>
-    },
-  },
-  {
-    header: "Activo",
-    accessorKey: "active",
-    cell: ({row}) => {
-      return <Checkbox checked={row.original.active} disabled={true}/>
-    },
-  },
-];
-
-
-const form: FormDefFactory<Tip, TipDto, string> = {
-  getSchema: formAction => {
-    return z.object({
-      title: z.string().nonempty("El título es requerido"),
-      summary: z.string().nonempty("El resumen es requerido"),
-      description: z.string().nonempty("La descripción es requerida"),
-      tags: z.array(z.string()).nonempty("Los tags son requeridos"),
-      active: z.boolean(),
-      image: formAction === "create" ? z.instanceof(File) : z.instanceof(File).optional(),
-    });
-  },
-  FormComponent: FormComponent,
-  getDefaultValues: (data?: Tip) => {
-    if (!data) {
-      return {
-        title: "",
-        summary: "",
-        description: "",
-        tags: [],
-        active: true,
-      };
-    }
-    return {
-      title: data.title,
-      summary: data.summary,
-      description: data.description,
-      tags: data.tags,
-      active: data.active,
-    };
-  },
-};
-
 
 export default function TipsPage() {
 
   const {authenticated} = useAuth();
   if (!authenticated) return null;
 
+
+  const table: TableFactory<Tip, string> = {
+    columns: [
+      {
+        header: "Id",
+        accessorKey: "id",
+        enableSorting: true,
+        cell: ({row}) => {
+          return <ClickToShowUUID id={row.original.id}/>
+        }
+      },
+      {
+        header: "Título",
+        accessorKey: "title",
+        enableSorting: false,
+      },
+      {
+        header: "Resumen",
+        accessorKey: "summary",
+        enableSorting: false,
+        cell: ({row}) => {
+          return <Truncate text={row.original.summary}/>
+        }
+      },
+      {
+        header: "Descripción",
+        accessorKey: "description",
+        enableSorting: false,
+        cell: ({row}) => {
+          return <Truncate text={row.original.description}/>
+        }
+      },
+      {
+        header: "Tags",
+        accessorKey: "tags",
+        cell: ({row}) => {
+          return <ItemsOnRounded items={row.original.tags}/>
+        }
+      },
+      {
+        header: "Imagen",
+        accessorKey: "image",
+        cell: ({row}) => {
+          return <OpenImageModal fetcher={() => tipsService.getImage(row.original.id)} alt={row.original.title}/>
+        },
+      },
+      {
+        header: "Activo",
+        accessorKey: "active",
+        cell: ({row}) => {
+          return <Checkbox checked={row.original.active} disabled/>
+        },
+      },
+    ],
+  }
+
+
+  const form: FormFactory<Tip, TipDto, string> = {
+    update: {
+      schema: z.object({
+        title: z.string().nonempty("El título es requerido"),
+        summary: z.string().nonempty("El resumen es requerido"),
+        description: z.string().nonempty("La descripción es requerida"),
+        tags: z.array(z.string()).nonempty("Los tags son requeridos"),
+        active: z.boolean(),
+        image: z.instanceof(File).optional(),
+      }),
+      defaultValues: (data: Tip) => {
+        return {
+          title: data.title,
+          summary: data.summary,
+          description: data.description,
+          tags: data.tags,
+          active: data.active,
+        };
+      },
+    },
+    create: {
+      schema: z.object({
+        title: z.string().nonempty("El título es requerido"),
+        summary: z.string().nonempty("El resumen es requerido"),
+        description: z.string().nonempty("La descripción es requerida"),
+        tags: z.array(z.string()).nonempty("Los tags son requeridos"),
+        active: z.boolean(),
+        image: z.instanceof(File),
+      }),
+      defaultValues: {
+        title: "",
+        summary: "",
+        description: "",
+        tags: [],
+        active: true,
+      },
+    },
+    FormComponent: FormComponent,
+  };
+
   return (
     <BreadcrumbSubLayout items={["Tips"]}>
       <CrudTable<Tip, TipDto, string>
-        title={"Tips"}
-        columns={columns}
-        operations={operationTips}
+        title="Tips"
+        operations={tipsService}
+        table={table}
         form={form}
       />
     </BreadcrumbSubLayout>
@@ -241,7 +249,7 @@ function FormComponent({form, entity}: Readonly<FormComponentProps<Tip, TipDto>>
               </div>
               <FormMessage/>
               <div className="mt-4">
-                {entity && !value && <LoadingImage fetcher={() => tipImage(entity.id)} alt={entity.title}/>}
+                {entity && !value && <LoadingImage fetcher={() => tipsService.getImage(entity.id)} alt={entity.title}/>}
                 {value && <img src={URL.createObjectURL(value)} alt="Preview"/>}
               </div>
             </FormItem>

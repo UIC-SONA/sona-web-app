@@ -14,7 +14,10 @@ import {
   useState
 } from "react";
 import {Entity} from "@/lib/crud.ts";
-import {CrudSchema} from "@/components/crud/crud-common.ts";
+import {
+  CrudSchema,
+  Schema
+} from "@/components/crud/crud-common.ts";
 import {Button} from "@/components/ui/button.tsx";
 import {
   LoaderCircle,
@@ -48,10 +51,7 @@ import {
 } from "@/components/ui/alert-dialog.tsx";
 import {useToast} from "@/hooks/use-toast.ts";
 
-type FormAction = "create" | "update";
-type InferedSchema<Dto> = z.infer<CrudSchema<Dto>>;
-type UseFormReturnWithSchema<Dto> = UseFormReturn<InferedSchema<Dto>>;
-
+export type UseFormReturnWithSchema<Dto> = UseFormReturn<Schema<Dto>>;
 
 export type FormComponentProps<TData, Dto, Extensions = {}> = {
   form: UseFormReturnWithSchema<Dto>,
@@ -59,15 +59,9 @@ export type FormComponentProps<TData, Dto, Extensions = {}> = {
 } & Extensions;
 
 
-export interface FormDefFactory<TData extends Entity<ID>, Dto, ID> {
-  getSchema: (formAction: FormAction) => CrudSchema<Dto>,
-  getDefaultValues: (data?: TData) => DefaultValues<InferedSchema<Dto>>,
-  FormComponent: ComponentType<FormComponentProps<TData, Dto>>,
-}
-
-export interface FormDef<TData extends Entity<ID>, Dto, ID> {
+export interface FormConfig<TData extends Entity<ID>, Dto, ID> {
   schema: CrudSchema<Dto>,
-  defaultValues: DefaultValues<InferedSchema<Dto>>,
+  defaultValues: DefaultValues<Schema<Dto>>,
   FormComponent: ComponentType<FormComponentProps<TData, Dto>>,
 }
 
@@ -90,7 +84,7 @@ interface CommonFormProps<TData extends Entity<ID>, Dto, ID> extends BaseFormPro
 
 
 interface BaseFormPropsMutate<TData extends Entity<ID>, Dto, ID> extends Omit<BaseFormProps, 'onSuccess'> {
-  form: FormDef<TData, Dto, ID>,
+  form: FormConfig<TData, Dto, ID>,
   onSuccess?: (entity: TData) => void,
 }
 
@@ -114,7 +108,7 @@ export async function dispatchSubmitAction(form: UseFormReturn<any>, action: () 
       if ('errors' in problemDetails) {
         const errors = problemDetails.errors as ValidationError[];
         for (const error of errors) {
-          const field = error.field.replace("update.dto.", "");
+          const field = error.field.replace("update.dto.", "").replace("create.dto.", "");
           const message = error.messages.join(', ')
           console.log(field, message);
           form.setError(field, {message});
@@ -125,7 +119,6 @@ export async function dispatchSubmitAction(form: UseFormReturn<any>, action: () 
         type: problemDetails.title,
         message: problemDetails.detail,
       });
-      throw error;
     }
   }
 }
@@ -163,7 +156,7 @@ function CommonForm<TData extends Entity<ID>, Dto, ID>(
     form.reset(defaultValues);
   }, [defaultValues, form, open]);
 
-  async function onSubmit(values: z.infer<CrudSchema<Dto>>) {
+  async function onSubmit(values: Schema<Dto>) {
     console.log(values);
     setLoading(true);
     try {
@@ -181,6 +174,7 @@ function CommonForm<TData extends Entity<ID>, Dto, ID>(
   const onOpenChange = (open: boolean) => {
     if (loading) return;
     setOpen(open);
+    onCancel?.();
   }
 
   return (
@@ -210,9 +204,6 @@ function CommonForm<TData extends Entity<ID>, Dto, ID>(
                   type="button"
                   variant="secondary"
                   className="mt-3 sm:mt-0"
-                  onClick={() => {
-                    onCancel?.();
-                  }}
                 >
                   Cancelar
                 </Button>

@@ -7,6 +7,7 @@ import {
   PageQuery,
 } from "@/lib/crud.ts";
 import {
+  ComponentType,
   useCallback,
   useEffect,
   useState
@@ -50,87 +51,154 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
-import {DialogType, useAlertDialog} from "@/context/alert-dialog-context.tsx";
+import {
+  useAlertDialog
+} from "@/context/alert-dialog-context.tsx";
 import {
   extractError,
 } from "@/lib/errors.ts";
 import {useIsFirstRender} from "@/hooks/use-is-first-rendered.ts";
-import {CreateForm, DeleteForm, FormDefFactory, UpdateForm} from "@/components/crud/crud-forms.tsx";
+import {
+  CreateForm,
+  DeleteForm,
+  FormComponentProps,
+  FormConfig,
+  UpdateForm
+} from "@/components/crud/crud-forms.tsx";
+import {CrudSchema, Schema} from "@/components/crud/crud-common.ts";
+import {DefaultValues} from "react-hook-form";
 
 const perPage = [5, 10, 25, 50, 100];
 
-
-export type CrudTableProps<TData extends Entity<ID>, Dto, ID> = {
-  title: string;
-  operations: Partial<CrudOperations<TData, Dto, ID>>;
-  columns: ColumnDef<TData>[];
-  form?: FormDefFactory<TData, Dto, ID>;
+export interface FilterComponentProps<E> {
+  filters: FilterState<keyof E, E>,
 }
 
-export default function CrudTable<TData extends Entity<ID>, Dto, ID>({title, columns, operations, form}: Readonly<CrudTableProps<TData, Dto, ID>>) {
-  return <CrudOperationsTable
+interface FilterState<K extends keyof E, E> {
+  values: Partial<E>;
+
+  set(key: K, value?: E[K]): void;
+
+  get(key: K): E[K] | undefined;
+
+  clear(): void;
+
+  loading: boolean;
+}
+
+export interface FormFactory<TData extends Entity<ID>, Dto, ID> {
+  update?: {
+    schema: CrudSchema<Dto>,
+    defaultValues: (data: TData) => DefaultValues<Schema<Dto>>,
+  }
+  create?: {
+    schema: CrudSchema<Dto>,
+    defaultValues: DefaultValues<Schema<Dto>>,
+  }
+  FormComponent: ComponentType<FormComponentProps<TData, Dto>>,
+}
+
+export interface TableFactory<TData extends Entity<ID>, ID, E = {}> {
+  columns: ColumnDef<TData>[];
+  FilterComponent?: ComponentType<FilterComponentProps<E>>;
+}
+
+export type CrudTableProps<TData extends Entity<ID>, Dto, ID, E = {}> = {
+  title: string;
+  operations: Partial<CrudOperations<TData, Dto, ID, E>>;
+  table: TableFactory<TData, ID, E>;
+  form?: FormFactory<TData, Dto, ID>;
+}
+
+export default function CrudTable<
+  TData extends Entity<ID>,
+  Dto,
+  ID,
+  E = {}
+>({title, table, operations, form}: Readonly<CrudTableProps<TData, Dto, ID, E>>) {
+  return <CrudOperationsTable<TData, Dto, ID, E>
     title={title}
-    columns={columns}
+    table={table}
     form={form}
     {...operations}
   />
 }
 
-interface CrudOperationsTableProp<TData extends Entity<ID>, Dto, ID> extends Partial<CrudOperations<TData, Dto, ID>> {
+interface CrudOperationsTableProp<
+  TData extends Entity<ID>,
+  Dto,
+  ID,
+  E = {}
+> extends Partial<CrudOperations<TData, Dto, ID, E>> {
   title: string;
-  columns: ColumnDef<TData>[];
-  form?: FormDefFactory<TData, Dto, ID>;
+  table: TableFactory<TData, ID, E>;
+  form?: FormFactory<TData, Dto, ID>;
 }
 
-function CrudOperationsTable<TData extends Entity<ID>, Dto, ID>(
+function CrudOperationsTable<TData extends Entity<ID>, Dto, ID, E = {}>(
   {
     title,
-    columns,
+    table: {columns, FilterComponent},
     form,
     page,
-    delete: delete0,
+    delete: deleteFn,
     create,
     update
-  }: Readonly<CrudOperationsTableProp<TData, Dto, ID>>) {
+  }: Readonly<CrudOperationsTableProp<TData, Dto, ID, E>>) {
 
-  if (form && !(create || update)) {
-    throw new Error("form configuration is only allowed when operations is Creatable or Updatable");
-  }
+  const {pushAlertDialog} = useAlertDialog();
+  const isFirstRender = useIsFirstRender();
 
-  const [pageQuery, setPageQuery] = useState<PageQuery>(defaultPageQuery(perPage[0]));
+  const [pageQuery, setPageQuery] = useState<PageQuery<E>>(defaultPageQuery(perPage[0]));
   const [search, setSearch] = useState(pageQuery.search);
+  const [filters, setFilters] = useState<Partial<E>>({});
+
   const [pageData, setPageData] = useState<Page<TData>>(emptyPage);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingNextPagination, setLoadingNextPagination] = useState(false);
   const [loadingBackPagination, setLoadingBackPagination] = useState(false);
   const [loadingPageSize, setLoadingPageSize] = useState(false);
+  const [loadingFilters, setLoadingFilters] = useState(false);
 
+  const loading =
+    loadingNextPagination
+    || loadingBackPagination
+    || loadingSearch
+    || loadingPageSize;
 
-  const {pushAlertDialog} = useAlertDialog();
-  const isFirstRender = useIsFirstRender();
   const table = useReactTable<TData>({
     data: pageData.content || [],
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
 
-  const loadData = useCallback((pageQuery: PageQuery) => {
-    page?.(pageQuery).then((page) => {
-      setPageData(page);
-      setLoadings(false);
-    }).catch((error) => {
+  const loadData = useCallback(async (pageQuery: PageQuery<E>) => {
+    if (!page) return;
+    try {
+      const results = await page(pageQuery);
+      setPageData(results);
+    } catch (error) {
       const err = extractError(error);
       pushAlertDialog({
-        type: DialogType.ERROR,
+        type: "error",
         title: err.title,
         description: err.description,
       });
-    });
-  }, [page, pushAlertDialog]);
+    } finally {
+      setLoadings(false);
+    }
+  }, [page]);
 
   useEffect(() => {
-    loadData(pageQuery);
+    loadData(pageQuery).then();
   }, [loadData, pageQuery]);
+
+
+  useEffect(() => {
+    if (isFirstRender) return;
+    setLoadingFilters(true);
+    setPageQuery((prev) => ({...prev, filters, page: 0}));
+  }, [filters]);
 
 
   useEffect(() => {
@@ -141,8 +209,10 @@ function CrudOperationsTable<TData extends Entity<ID>, Dto, ID>(
     }, 500);
 
     return () => clearTimeout(handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
+
+
+  const useFormInTable = deleteFn != undefined || (update != undefined && form?.update != undefined);
 
   const nextPage = () => {
     setLoadingNextPagination(true);
@@ -159,6 +229,7 @@ function CrudOperationsTable<TData extends Entity<ID>, Dto, ID>(
     setLoadingBackPagination(loading);
     setLoadingSearch(loading);
     setLoadingPageSize(loading);
+    setLoadingFilters(loading);
   }
 
   const setPageSize = (size: number) => {
@@ -166,8 +237,14 @@ function CrudOperationsTable<TData extends Entity<ID>, Dto, ID>(
     setPageQuery((prev) => ({...prev, size}));
   }
 
-  const loading = loadingNextPagination || loadingBackPagination || loadingSearch || loadingPageSize;
-  const useFormInTable = (update != undefined || delete0 != undefined);
+
+  const filterState: FilterState<keyof E, E> = {
+    values: filters,
+    loading: loadingFilters,
+    set: (key, value) => setFilters((prev) => ({...prev, [key]: value})),
+    get: (key) => filters[key],
+    clear: () => Object.keys(filters).length && setFilters({}),
+  };
 
   return (
     <div>
@@ -188,13 +265,18 @@ function CrudOperationsTable<TData extends Entity<ID>, Dto, ID>(
           <DropdownVisibleColumns
             table={table}
           />
-          {form && create && <CreateAction
-              form={form}
+          {form?.create && create && <CreateAction
+              form={{
+                defaultValues: form.create.defaultValues,
+                schema: form.create.schema,
+                FormComponent: form.FormComponent,
+              }}
               create={create}
               reload={() => setPageQuery((prev) => ({...prev}))}
           />}
         </div>
       </div>
+      {FilterComponent && <FilterComponent filters={filterState}/>}
       <div className="border rounded-lg overflow-hidden">
         <TableComponent>
           <CrudTableHeader
@@ -218,7 +300,7 @@ function CrudOperationsTable<TData extends Entity<ID>, Dto, ID>(
                       entity={row.original}
                       form={form}
                       reload={() => setPageQuery((prev) => ({...prev}))}
-                      delete={delete0}
+                      delete={deleteFn}
                       update={update}
                   />}
                 </TableRow>
@@ -391,7 +473,7 @@ function DropdownVisibleColumns<TData>({table, className}: Readonly<DropdownVisi
 
 interface EntityActionsProps<TData extends Entity<ID>, Dto, ID> {
   entity: TData,
-  form?: FormDefFactory<TData, Dto, ID>,
+  form?: FormFactory<TData, Dto, ID>,
   reload: () => void,
   delete?: (id: ID) => Promise<void>,
   update?: (id: ID, data: Dto) => Promise<TData>,
@@ -402,15 +484,13 @@ function EntityActions<TData extends Entity<ID>, Dto, ID>(
     entity,
     form,
     reload,
-    delete: deleteCb,
+    delete: deleteFn,
     update
   }: Readonly<EntityActionsProps<TData, Dto, ID>>) {
 
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-
-  const canUpdate = update != undefined && form != undefined;
 
   const handleUpdateClick = () => {
     setDropdownOpen(false);
@@ -424,7 +504,7 @@ function EntityActions<TData extends Entity<ID>, Dto, ID>(
 
   return (
     <>
-      {canUpdate && form && (
+      {form?.update && update && (
         <UpdateForm
           open={isUpdateOpen}
           setOpen={setIsUpdateOpen}
@@ -432,19 +512,19 @@ function EntityActions<TData extends Entity<ID>, Dto, ID>(
           entity={entity}
           update={update}
           form={{
-            defaultValues: form.getDefaultValues(entity),
-            schema: form.getSchema("update"),
+            defaultValues: form.update.defaultValues(entity),
+            schema: form.update.schema,
             FormComponent: form.FormComponent,
           }}
         />
       )}
-      {deleteCb && (
+      {deleteFn && (
         <DeleteForm
           open={isDeleteOpen}
           setOpen={setIsDeleteOpen}
           onSuccess={reload}
           entity={entity}
-          delete={deleteCb}
+          delete={deleteFn}
         />
       )}
       <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
@@ -456,13 +536,13 @@ function EntityActions<TData extends Entity<ID>, Dto, ID>(
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Acciones</DropdownMenuLabel>
           <DropdownMenuSeparator/>
-          {canUpdate && (
+          {form?.update && update && (
             <DropdownMenuItem onSelect={handleUpdateClick}>
               <EditIcon/>
               Actualizar
             </DropdownMenuItem>
           )}
-          {deleteCb && (
+          {deleteFn && (
             <DropdownMenuItem onSelect={handleDeleteClick}>
               <TrashIcon/>
               Eliminar
@@ -475,7 +555,7 @@ function EntityActions<TData extends Entity<ID>, Dto, ID>(
 }
 
 interface CreateActionProps<TData extends Entity<ID>, Dto, ID> {
-  form: FormDefFactory<TData, Dto, ID>,
+  form: FormConfig<TData, Dto, ID>,
   create: (data: Dto) => Promise<TData>,
   reload: () => void,
 }
@@ -495,11 +575,7 @@ function CreateAction<TData extends Entity<ID>, Dto, ID>(
         setOpen={setIsOpen}
         onSuccess={reload}
         create={create}
-        form={{
-          defaultValues: form.getDefaultValues(),
-          schema: form.getSchema("create"),
-          FormComponent: form.FormComponent,
-        }}
+        form={form}
       />
       <Button onClick={() => setIsOpen(true)}>
         <PlusIcon/>
@@ -508,3 +584,5 @@ function CreateAction<TData extends Entity<ID>, Dto, ID>(
     </>
   );
 }
+
+

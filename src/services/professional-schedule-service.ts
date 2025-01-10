@@ -20,6 +20,15 @@ export interface ProfessionalScheduleDto {
   professionalId: number;
 }
 
+async function createAll(data: ProfessionalScheduleDto[]): Promise<ProfessionalSchedule[]> {
+  const response = await apiClient.post<any[]>(
+    `${resource}/all`,
+    data
+  );
+
+  return response.data.map(modelTransformer);
+}
+
 async function byProfessionalId(professionalId: number, from: Date, to: Date): Promise<ProfessionalSchedule[]> {
   const response = await apiClient.get<ProfessionalSchedule[]>(
     `${resource}/professional/${professionalId}`,
@@ -51,5 +60,6 @@ const crudOperations = restCrud<ProfessionalSchedule, ProfessionalScheduleDto, n
 
 export const professionalScheduleService = {
   ...crudOperations,
+  createAll,
   getByProfessional: byProfessionalId,
 }

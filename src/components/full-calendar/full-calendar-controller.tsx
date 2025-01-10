@@ -88,7 +88,8 @@ export default function FullCalendarController(
   return (
     <div
       className={cn("flex flex-wrap min-w-full justify-center gap-3 ", className)}
-      {...props}>
+      {...props}
+    >
       <div className="flex flex-row space-x-1">
         <Button
           variant="ghost"

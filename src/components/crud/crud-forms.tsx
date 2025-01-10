@@ -184,7 +184,7 @@ function CommonForm<TData extends Entity<ID>, Dto, ID>(
         onInteractOutside={(e) => e.preventDefault()}
       >
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form onSubmit={form.handleSubmit(onSubmit)} autoComplete="off">
             <RequestErrorFormAlertDialog
               form={form}
               onClose={onCloseErrorDialog}
@@ -234,7 +234,10 @@ export function CreateForm<TData extends Entity<ID>, Dto, ID>(
       title={title || "Crear"}
       description={description || "Ingresa los datos del nuevo registro"}
       onSubmitAction={create}
-      toastAction={toastAction || {title: "Registro creado", description: "El registro se ha creado correctamente"}}
+      toastAction={toastAction || {
+        title: "Registro creado",
+        description: "El registro se ha creado correctamente"
+      }}
       {...props}
     />
   );
@@ -258,7 +261,10 @@ export function UpdateForm<TData extends Entity<ID>, Dto, ID>(
       description={description || "Modifica los datos del registro"}
       onSubmitAction={(data) => update(entity.id, data)}
       entity={entity}
-      toastAction={toastAction || {title: "Registro actualizado", description: "El registro se ha actualizado correctamente"}}
+      toastAction={toastAction || {
+        title: "Registro actualizado",
+        description: "El registro se ha actualizado correctamente"
+      }}
       {...props}
     />
   );

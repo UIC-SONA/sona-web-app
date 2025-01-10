@@ -20,7 +20,7 @@ import {
   PopoverTrigger
 } from '@/components/ui/popover'
 import {ScrollArea} from './scroll-area'
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {useDebouncedCallback} from "@/hooks/use-debounce.ts";
 import type {ClassValue} from "clsx";
 
@@ -67,10 +67,26 @@ export function Combobox<T>(
   }: Readonly<ComboboxProps<T>>
 ) {
   const [open, setOpen] = useState(false)
+  const [hasTrigger, setHasTrigger] = useState(false)
+  const [textSearch, setTextSearch] = useState('')
+
+  const onOpenChage = (boolean: boolean) => {
+    if (!hasTrigger && boolean) {
+      setHasTrigger(true);
+      onSearchValueChange?.('');
+    }
+    setOpen(boolean);
+  }
+
+  useEffect(() => {
+    onSearchValueChange?.(textSearch)
+  }, [textSearch])
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={true}>
-      <PopoverTrigger asChild>
+    <Popover open={open} onOpenChange={onOpenChage} modal={true}>
+      <PopoverTrigger
+        asChild
+      >
         <Button
           variant='outline'
           type='button'
@@ -79,8 +95,7 @@ export function Combobox<T>(
         >
           {value ? comboboxItem(value).label : selectItemText}
           {value ? (
-            <button
-              type="button"
+            <span
               onClick={(e) => {
                 e.stopPropagation()
                 onSelect(undefined)
@@ -88,7 +103,7 @@ export function Combobox<T>(
               className="p-1 hover:bg-primary hover:text-white rounded-full hover:animate-pulse"
             >
               <X className="h-4 w-4 opacity-50 hover:opacity-100"/>
-            </button>
+            </span>
           ) : (
             <ChevronsUpDown className='h-4 w-4'/>
           )}
@@ -97,11 +112,13 @@ export function Combobox<T>(
       <PopoverContent
         style={popOverStyles}
         className='p-0'
+
       >
         <Command>
           <CommandInput
+            value={textSearch}
             placeholder={searchPlaceholder}
-            onValueChange={onSearchValueChange}
+            onValueChange={setTextSearch}
           />
           <ScrollArea className='max-h-[220px] overflow-auto'>
             {loading ? (

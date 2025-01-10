@@ -51,7 +51,7 @@ export type ConfigWithHeader<T extends ReadHeadersConfig | WriteHeadersConfig | 
 
 export function pageQueryToParams<F = {}>(query: PageQuery<F>, filtersTransformer?: FiltersTransformer<F>): URLSearchParams {
 
-  const {page, size, search, properties, direction, filters} = query;
+  const {page, size, search, sorts, filters} = query;
 
   const params = new URLSearchParams();
   params.append("page", page.toString());
@@ -61,13 +61,10 @@ export function pageQueryToParams<F = {}>(query: PageQuery<F>, filtersTransforme
     params.append("search", search);
   }
 
-  if (properties) {
-    for (const property of properties) {
-      params.append("properties", property);
+  if (sorts) {
+    for (const sort of sorts) {
+      params.append("sort", sort.property + "," + sort.direction);
     }
-  }
-  if (direction) {
-    params.append("direction", direction);
   }
 
   if (!filters) {

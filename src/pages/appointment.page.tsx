@@ -24,13 +24,25 @@ import {
 } from "@/components/ui/select.tsx";
 import {es} from "date-fns/locale/es";
 import {DateTimePicker} from "@/components/ui/date-picker.tsx";
-import {EraserIcon, LoaderCircle} from "lucide-react";
-import {cn, getPeriod} from "@/lib/utils.ts";
+import {
+  EraserIcon,
+  Laptop,
+  LoaderCircle,
+  Speech
+} from "lucide-react";
+import {
+  cn,
+  getPeriod
+} from "@/lib/utils.ts";
 import {Button} from "@/components/ui/button.tsx";
-import {useEffect, useState} from "react";
+import {
+  useEffect,
+  useState
+} from "react";
 import {format} from "date-fns";
 import {Card, CardContent} from "@/components/ui/card.tsx";
 import UserSelect from "@/components/user-select.tsx";
+import AppointmentView from "@/components/appointment-view.tsx";
 
 
 export function AppointmentPage() {
@@ -43,6 +55,9 @@ export function AppointmentPage() {
       {
         header: "Id",
         accessorKey: "id",
+        meta: {
+          hidden: true
+        }
       },
       {
         header: "Fecha",
@@ -90,6 +105,25 @@ export function AppointmentPage() {
           </div>
         },
       },
+      {
+        header: "Acciones",
+        enableSorting: false,
+        cell: ({row}) => {
+
+          const [appointment, setAppointment] = useState<Appointment | undefined>();
+
+          return <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAppointment(row.original)}
+            >
+              Ver
+            </Button>
+            <AppointmentView appointment={appointment} onClose={() => setAppointment(undefined)}/>
+          </div>
+        }
+      }
     ],
     FilterComponent: FilterComponent
   }
@@ -215,9 +249,21 @@ export function SelectAppointmentType({value, onChange}: Readonly<SelectAppointm
         <SelectValue placeholder="Tipo de cita"/>
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="ALL">Todos</SelectItem>
-        <SelectItem value="VIRTUAL">Virtual</SelectItem>
-        <SelectItem value="PRESENTIAL">Presencial</SelectItem>
+        <SelectItem value="ALL">
+          Todos
+        </SelectItem>
+        <SelectItem value="VIRTUAL">
+          <div className="flex items-center space-x-2">
+            <Laptop size={18}/>
+            <p>Virtual</p>
+          </div>
+        </SelectItem>
+        <SelectItem value="PRESENTIAL">
+          <div className="flex items-center space-x-2">
+            <Speech size={18}/>
+            <p>Presencial</p>
+          </div>
+        </SelectItem>
       </SelectContent>
     </Select>
   );

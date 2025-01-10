@@ -30,15 +30,19 @@ export function emptyPage<T>(): Page<T> {
   };
 }
 
-export type Direction = "ASC" | "DESC";
+export type Direction = "asc" | "desc";
 
 export type PageQuery<F = {}> = {
   search?: string;
   page: number;
   size: number;
-  properties?: string[];
-  direction?: Direction;
+  sorts?: Sort[];
   filters?: Partial<F>;
+};
+
+export type Sort = {
+  property: string;
+  direction: Direction;
 };
 
 export function defaultPageQuery(size: number = 10): PageQuery {
@@ -46,6 +50,7 @@ export function defaultPageQuery(size: number = 10): PageQuery {
     search: "",
     page: 0,
     size,
+    sorts: [],
   };
 }
 

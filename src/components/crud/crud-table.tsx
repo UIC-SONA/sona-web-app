@@ -1,21 +1,25 @@
 import {
   CrudOperations,
-  defaultPageQuery,
-  emptyPage,
   Entity,
-  Page,
   PageQuery,
+  Sort,
 } from "@/lib/crud.ts";
 import {
   ComponentType,
-  useCallback,
   useEffect,
   useState
 } from "react";
 import {
   ColumnDef,
+  ColumnSort,
+  SortDirection,
   flexRender,
   getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  PaginationState,
+  SortingState,
   Table,
   useReactTable,
 } from "@tanstack/react-table"
@@ -29,19 +33,20 @@ import {
 } from "@/components/ui/table"
 import {Button} from "@/components/ui/button.tsx";
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronsUpDownIcon,
+  ChevronUp,
   EditIcon,
   EllipsisVerticalIcon,
-  EyeIcon, LoaderCircle,
+  EyeIcon,
+  LoaderCircle,
   PlusIcon,
   SearchIcon,
   TrashIcon,
 } from "lucide-react";
-import {
-  Input,
-} from "@/components/ui/input.tsx";
+import {Input,} from "@/components/ui/input.tsx";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -51,12 +56,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
-import {
-  useAlertDialog
-} from "@/context/alert-dialog-context.tsx";
-import {
-  extractError,
-} from "@/lib/errors.ts";
+import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
+import {extractError,} from "@/lib/errors.ts";
 import {useIsFirstRender} from "@/hooks/use-is-first-rendered.ts";
 import {
   CreateForm,
@@ -110,6 +111,12 @@ export type CrudTableProps<TData extends Entity<ID>, Dto, ID, E = {}> = {
   form?: FormFactory<TData, Dto, ID>;
 }
 
+interface PaginationInfo {
+  totalPages: number;
+  totalElements: number;
+}
+
+
 export default function CrudTable<
   TData extends Entity<ID>,
   Dto,
@@ -135,119 +142,201 @@ interface CrudOperationsTableProp<
   form?: FormFactory<TData, Dto, ID>;
 }
 
-function CrudOperationsTable<TData extends Entity<ID>, Dto, ID, E = {}>(
-  {
+export function CrudOperationsTable<
+  TData extends Entity<ID>,
+  Dto,
+  ID,
+  E = {}
+>({
     title,
-    table: {columns, FilterComponent},
+    table: {
+      columns,
+      FilterComponent
+    },
     form,
     page,
     delete: deleteFn,
     create,
     update
-  }: Readonly<CrudOperationsTableProp<TData, Dto, ID, E>>) {
+  }: Readonly<CrudOperationsTableProp<TData, Dto, ID, E>>
+) {
 
   const {pushAlertDialog} = useAlertDialog();
   const isFirstRender = useIsFirstRender();
 
-  const [pageQuery, setPageQuery] = useState<PageQuery<E>>(defaultPageQuery(perPage[0]));
-  const [search, setSearch] = useState(pageQuery.search);
+  const [data, setData] = useState<TData[]>([]);
+  const [pagination, setPagination] = useState<PaginationState>({pageIndex: 0, pageSize: 20});
+  const [paginationInfo, setPaginationInfo] = useState<PaginationInfo>({totalPages: 0, totalElements: 0});
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<Partial<E>>({});
 
-  const [pageData, setPageData] = useState<Page<TData>>(emptyPage);
+  const [loading, setLoading] = useState(true);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingNextPagination, setLoadingNextPagination] = useState(false);
   const [loadingBackPagination, setLoadingBackPagination] = useState(false);
   const [loadingPageSize, setLoadingPageSize] = useState(false);
   const [loadingFilters, setLoadingFilters] = useState(false);
+  const [sortingColumn, setSortingColumn] = useState<string | undefined>();
 
-  const loading =
-    loadingNextPagination
+  const anyLoading = loading
+    || loadingNextPagination
     || loadingBackPagination
     || loadingSearch
-    || loadingPageSize;
+    || loadingPageSize
+    || sortingColumn !== undefined
 
-  const table = useReactTable<TData>({
-    data: pageData.content || [],
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  });
-
-  const loadData = useCallback(async (pageQuery: PageQuery<E>) => {
-    if (!page) return;
-    try {
-      const results = await page(pageQuery);
-      setPageData(results);
-    } catch (error) {
-      const err = extractError(error);
-      pushAlertDialog({
-        type: "error",
-        title: err.title,
-        description: err.description,
-      });
-    } finally {
-      setLoadings(false);
-    }
-  }, [page]);
-
-  useEffect(() => {
-    loadData(pageQuery).then();
-  }, [loadData, pageQuery]);
-
-
-  useEffect(() => {
-    if (isFirstRender) return;
-    setLoadingFilters(true);
-    setPageQuery((prev) => ({...prev, filters, page: 0}));
-  }, [filters]);
-
-
-  useEffect(() => {
-    if (isFirstRender) return;
-    const handler = setTimeout(() => {
-      setLoadingSearch(true);
-      setPageQuery((prev) => ({...prev, search, page: 0}));
-    }, 500);
-
-    return () => clearTimeout(handler);
-  }, [search]);
-
-
-  const useFormInTable = deleteFn != undefined || (update != undefined && form?.update != undefined);
-
-  const nextPage = () => {
-    setLoadingNextPagination(true);
-    setPageQuery((prev) => ({...prev, page: prev.page + 1}));
-  };
-
-  const previousPage = () => {
-    setLoadingBackPagination(true);
-    setPageQuery((prev) => ({...prev, page: prev.page - 1}));
+  const getSortParams = () => {
+    if (!sorting.length) return [];
+    return sorting.map<Sort>(({id, desc}: ColumnSort) => ({
+      property: id,
+      direction: desc ? 'desc' : 'asc',
+    }));
   };
 
   const setLoadings = (loading: boolean) => {
+    setLoading(loading);
     setLoadingNextPagination(loading);
     setLoadingBackPagination(loading);
     setLoadingSearch(loading);
     setLoadingPageSize(loading);
     setLoadingFilters(loading);
+    setSortingColumn(undefined);
   }
+
+  const fetchData = async () => {
+    if (!page) return;
+    try {
+
+      console.log("fetching data");
+
+      const query: PageQuery<E> = {
+        search,
+        page: pagination.pageIndex,
+        sorts: getSortParams(),
+        size: pagination.pageSize,
+      };
+
+      const results = await page(query);
+
+      setData(results.content);
+      setPagination({
+        pageSize: results.page.size,
+        pageIndex: results.page.number,
+      });
+      setPaginationInfo({
+        totalPages: results.page.totalPages,
+        totalElements: results.page.totalElements,
+      });
+
+    } catch (error) {
+      //
+      const {title, description} = extractError(error);
+      pushAlertDialog({type: "error", title, description});
+      //
+    } finally {
+      //
+      setLoadings(false);
+    }
+  };
+
+  const loadData = () => {
+    fetchData().then();
+  }
+
+  useEffect(() => {
+    setLoading(true);
+    loadData();
+  }, []);
+
+
+  useEffect(() => {
+    if (isFirstRender) return;
+    loadData();
+  }, [pagination.pageIndex, pagination.pageSize, sorting]);
+
+  useEffect(() => {
+    if (isFirstRender) return;
+    const handler = setTimeout(() => {
+      setLoadingSearch(true);
+      loadData();
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [search]);
+
+  const useFormInTable = deleteFn != undefined || (update != undefined && form?.update != undefined);
+
+  const table = useReactTable({
+    data,
+    columns,
+    initialState: {
+      columnVisibility: {
+        id: false,
+      },
+    },
+    state: {
+      sorting,
+      pagination,
+    },
+    onSortingChange: setSorting,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    manualPagination: true,
+    manualSorting: true,
+    pageCount: paginationInfo.totalPages,
+  });
+
+  const nextPage = () => {
+    setLoadingNextPagination(true);
+    table.nextPage();
+  };
+
+  const previousPage = () => {
+    setLoadingBackPagination(true);
+    table.previousPage();
+  };
 
   const setPageSize = (size: number) => {
     setLoadingPageSize(true);
-    setPageQuery((prev) => ({...prev, size}));
+    table.setPageSize(size);
   }
 
+  const reload = () => {
+    setLoading(true);
+    if (table.getState().pagination.pageIndex === 0) {
+      loadData();
+    } else {
+      table.resetPageIndex();
+    }
+  }
+
+  const clearFilters = () => {
+    if (Object.keys(filters).length === 0) return;
+    setFilters({});
+  }
+
+  const setFilter = (key: keyof E, value?: E[keyof E]) => {
+    setFilters((prev) => ({...prev, [key]: value}));
+  }
+
+  const getFilter = (key: keyof E): E[keyof E] | undefined => {
+    return filters[key];
+  }
 
   const filterState: FilterState<keyof E, E> = {
     values: filters,
     loading: loadingFilters,
-    set: (key, value) => setFilters((prev) => ({...prev, [key]: value})),
-    get: (key) => filters[key],
-    clear: () => Object.keys(filters).length && setFilters({}),
+    set: setFilter,
+    get: getFilter,
+    clear: clearFilters,
   };
 
   return (
-    <div>
+    <div className="w-full">
       <h1 className="text-2xl font-bold mb-4">{title}</h1>
       <div className="grid gap-4 mb-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 items-center">
         <IntelliSearch
@@ -258,7 +347,7 @@ function CrudOperationsTable<TData extends Entity<ID>, Dto, ID, E = {}>(
         />
         <div className="col-span-1 sm:col-span-2 lg:col-span-2 flex items-center justify-end space-x-2">
           <DropdownPerPage
-            pageSize={pageQuery.size}
+            pageSize={table.getState().pagination.pageSize}
             onPageSizeChange={setPageSize}
             loading={loadingPageSize}
           />
@@ -272,19 +361,65 @@ function CrudOperationsTable<TData extends Entity<ID>, Dto, ID, E = {}>(
                 FormComponent: form.FormComponent,
               }}
               create={create}
-              reload={() => setPageQuery((prev) => ({...prev}))}
+              reload={reload}
           />}
         </div>
       </div>
       {FilterComponent && <FilterComponent filters={filterState}/>}
       <div className="border rounded-lg overflow-hidden">
         <TableComponent>
-          <CrudTableHeader
-            table={table}
-            aditionalHead={useFormInTable}
-          />
+          <TableHeader className="bg-primary bg-opacity-50">
+            {table.getHeaderGroups().map((headerGroup) => {
+              const headClassName = "font-bold text-primary-foreground";
+
+              return (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    const column = header.column;
+                    const columnDef = column.columnDef;
+                    const headerToRender = columnDef.header;
+
+                    if (typeof headerToRender === "string" && column.getCanSort()) {
+                      return (
+                        <TableHead key={header.id} className={headClassName}>
+                          {flexRender(
+                            <Button
+                              variant="ghost"
+                              className="font-bold"
+                              onClick={() => {
+                                setSortingColumn(column.id);
+                                column.toggleSorting();
+                              }}
+                              disabled={anyLoading}
+                            >
+                              {headerToRender}
+                              <SortIcon isSorted={column.getIsSorted()} sorting={sortingColumn === column.id}/>
+                            </Button>, header.getContext())}
+                        </TableHead>
+                      )
+                    }
+
+                    return (
+                      <TableHead key={header.id} className={headClassName}>
+                        {header.isPlaceholder ? null : flexRender(columnDef.header, header.getContext())}
+                      </TableHead>
+                    )
+                  })}
+                  {useFormInTable && <TableHead/>}
+                </TableRow>
+              );
+            })}
+          </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {loading && <TableRow>
+                <TableCell colSpan={columns.length + (useFormInTable ? 1 : 0)} className="h-24 text-center">
+                    <div className="flex items-center justify-center space-x-2 flex-col">
+                        <LoaderCircle className="animate-spin"/>
+                        Cargando...
+                    </div>
+                </TableCell>
+            </TableRow>}
+            {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => {
                 return <TableRow
                   key={row.id}
@@ -299,40 +434,33 @@ function CrudOperationsTable<TData extends Entity<ID>, Dto, ID, E = {}>(
                   {useFormInTable && <EntityActions
                       entity={row.original}
                       form={form}
-                      reload={() => setPageQuery((prev) => ({...prev}))}
+                      reload={reload}
                       delete={deleteFn}
                       update={update}
                   />}
                 </TableRow>
               })
             ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length + (useFormInTable ? 1 : 0)} className="h-24 text-center">
-                  {isFirstRender ? (
-                    <div className="flex items-center justify-center space-x-2 flex-col">
-                      <LoaderCircle className="animate-spin"/>
-                      Cargando...
-                    </div>
-                  ) : (
-                    "No hay registros"
-                  )}
-                </TableCell>
+              !isFirstRender && <TableRow>
+                  <TableCell colSpan={columns.length + (useFormInTable ? 1 : 0)} className="h-24 text-center">
+                      No hay datos
+                  </TableCell>
               </TableRow>
             )}
           </TableBody>
         </TableComponent>
       </div>
       <div className="flex items-center justify-end space-x-2 py-4">
-        {pageData.page.totalPages > 0 &&
+        {table.getPageCount() > 0 &&
             <>
                 <span className="text-sm text-muted-foreground">
-                    Página {pageData.page.number + 1} de {pageData.page.totalPages}
+                    Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
                 </span>
                 <Button
                     variant="outline"
                     size="sm"
                     onClick={previousPage}
-                    disabled={pageData.page.number === 0 || loading}
+                    disabled={!table.getCanPreviousPage() || anyLoading}
                 >
                   {loadingBackPagination
                     ? <LoaderCircle className="animate-spin"/>
@@ -343,7 +471,7 @@ function CrudOperationsTable<TData extends Entity<ID>, Dto, ID, E = {}>(
                     variant="outline"
                     size="sm"
                     onClick={nextPage}
-                    disabled={pageData.page.number === pageData.page.totalPages - 1 || loading}
+                    disabled={!table.getCanNextPage() || anyLoading}
                 >
                   {loadingNextPagination
                     ? <LoaderCircle className="animate-spin"/>
@@ -355,29 +483,11 @@ function CrudOperationsTable<TData extends Entity<ID>, Dto, ID, E = {}>(
     </div>);
 }
 
-interface CrudTableHeaderProps<TData extends Entity<ID>, ID> {
-  table: Table<TData>,
-  aditionalHead: boolean,
+function SortIcon({isSorted, sorting}: Readonly<{ isSorted: false | SortDirection, sorting: boolean }>) {
+  if (sorting) return <LoaderCircle className="animate-spin"/>;
+  if (isSorted === false) return <ChevronsUpDownIcon/>;
+  return isSorted === "asc" ? <ChevronUp/> : <ChevronDown/>;
 }
-
-function CrudTableHeader<TData extends Entity<ID>, ID>({table, aditionalHead}: Readonly<CrudTableHeaderProps<TData, ID>>) {
-  return <TableHeader className="bg-primary bg-opacity-50">
-    {table.getHeaderGroups().map((headerGroup) => (
-      <TableRow key={headerGroup.id}>
-        {headerGroup.headers.map(({column, id, getContext, isPlaceholder}) => {
-          const columnDef = column.columnDef;
-          return (
-            <TableHead key={id} className="font-bold text-primary-foreground ">
-              {isPlaceholder ? null : flexRender(columnDef.header, getContext())}
-            </TableHead>
-          )
-        })}
-        {aditionalHead && <TableHead/>}
-      </TableRow>
-    ))}
-  </TableHeader>
-}
-
 
 interface IntelliSearchProps {
   value?: string,

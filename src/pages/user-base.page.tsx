@@ -57,26 +57,27 @@ export default function UserBasePage(
       {
         header: "Nombre de Usuario",
         accessorKey: "username",
-        enableSorting: false,
+        enableSorting: true,
       },
       {
         header: "Nombre",
         accessorKey: "firstName",
-        enableSorting: false,
+        enableSorting: true,
       },
       {
         header: "Apellido",
         accessorKey: "lastName",
-        enableSorting: false,
+        enableSorting: true,
       },
       {
         header: "Correo",
         accessorKey: "email",
-        enableSorting: false,
+        enableSorting: true,
       },
       {
         header: "Roles",
         accessorKey: "authorities",
+        enableSorting: false,
         cell: ({row}) => {
           return <ItemsOnRounded items={row.original.authorities} mapper={userService.getAuthorityName}/>
         },
@@ -93,7 +94,7 @@ export default function UserBasePage(
         email: z.string().email(),
         authoritiesToAdd: z.array(z.nativeEnum(Authority)),
         authoritiesToRemove: z.array(z.nativeEnum(Authority)),
-        password: z.string().nonempty().min(8, {message: "La contraseña debe tener al menos 8 caracteres"}).optional(),
+        password: z.string().min(8, {message: "La contraseña debe tener al menos 8 caracteres"}).optional(),
       }),
       defaultValues: (data: User) => {
         return {
@@ -115,7 +116,7 @@ export default function UserBasePage(
         email: z.string().email(),
         authoritiesToAdd: z.array(z.nativeEnum(Authority)),
         authoritiesToRemove: z.array(z.nativeEnum(Authority)),
-        password: z.string().nonempty().min(8, {message: "La contraseña debe tener al menos 8 caracteres"}),
+        password: z.string().min(8, {message: "La contraseña debe tener al menos 8 caracteres"}),
       }),
       defaultValues: {
         username: "",
@@ -162,7 +163,7 @@ function FormComponent({form, entity, authorities}: Readonly<FormUserProps>) {
           <FormItem className="lg:col-span-2">
             <FormLabel>Nombre de Usuario</FormLabel>
             <FormControl>
-              <Input placeholder="Nombre de Usuario" {...field} />
+              <Input placeholder="Nombre de Usuario" {...field} autoComplete="off"/>
             </FormControl>
             <FormMessage/>
           </FormItem>
@@ -177,7 +178,7 @@ function FormComponent({form, entity, authorities}: Readonly<FormUserProps>) {
             <FormItem className="lg:col-span-2">
               <FormLabel>Contraseña</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="Contraseña" {...field} />
+                <Input type="password" placeholder="Contraseña" {...field} autoComplete="off"/>
               </FormControl>
               <FormMessage/>
             </FormItem>
@@ -270,6 +271,7 @@ function EnableChangePassword({form}: Readonly<{ form: UseFormReturn<z.infer<Cru
           </div>
           <FormControl>
             <Input
+              autoComplete={enabled ? "new-password" : "off"}
               disabled={!enabled}
               type="password"
               placeholder="Contraseña"

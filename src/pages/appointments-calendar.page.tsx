@@ -27,24 +27,16 @@ import {
 } from "@/pages/appointment.page.tsx";
 import {
   EraserIcon,
-  LoaderCircle,
-  UserIcon
+  LoaderCircle
 } from "lucide-react";
 import {
   cn,
-  getCSSVariableValue, getPeriod
+  getCSSVariableValue
 } from "@/lib/utils.ts";
 import {EventInput} from "@fullcalendar/core";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog.tsx";
-import {Badge} from "@/components/ui/badge.tsx";
-import {format} from "date-fns";
 import {Button} from "@/components/ui/button.tsx";
 import UserSelect from "@/components/user-select.tsx";
+import AppointmentView from "@/components/appointment-view.tsx";
 
 export default function AppointmentsCalendarPage() {
 
@@ -82,7 +74,6 @@ export default function AppointmentsCalendarPage() {
     setProfessional(undefined);
     setCanceled(undefined);
     setType(undefined);
-    setRange({from: new Date(), to: new Date()});
   }
 
   useEffect(() => {
@@ -164,76 +155,20 @@ export default function AppointmentsCalendarPage() {
   );
 }
 
-interface AppointmentViewProps {
-  appointment?: Appointment;
-  onClose: () => void;
-}
 
-function AppointmentView({appointment, onClose}: Readonly<AppointmentViewProps>) {
-  const period = getPeriod(appointment?.hour);
-  const formattedDate = appointment ? format(appointment.date, "EEEE d 'de' MMMM 'de' yyyy", {locale: es}) : '';
-  const formattedHour = appointment ? `${appointment.hour} ${period}` : '';
-
-  return (
-    <Dialog open={!!appointment} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md rounded-lg shadow-lg">
-        <DialogHeader className="border-b pb-4">
-          <DialogTitle className="flex justify-between items-center text-lg font-semibold">
-            <span>Detalles de la Cita</span>
-            {appointment?.canceled && (
-              <Badge variant="destructive" className="ml-2 text-xs">
-                Cancelada
-              </Badge>
-            )}
-          </DialogTitle>
-        </DialogHeader>
-        {appointment && (
-          <div className="grid gap-6">
-            <div className="space-y-1">
-              <h4 className="font-semibold text-sm">Fecha y Hora</h4>
-              <p className="text-sm">{formattedDate} - {formattedHour}</p>
-            </div>
-
-            <div className="space-y-1">
-              <h4 className="font-semibold text-sm">Tipo de Cita</h4>
-              <p className="text-sm">{appointmentsService.getAppointmentTypeName(appointment.type)}</p>
-            </div>
-
-            <div className="space-y-1">
-              <h4 className="font-semibold text-sm">Profesional</h4>
-              <div className="flex items-center gap-2 text-sm">
-                <UserIcon size={16}/>
-                <span>{appointment.professional.firstName + ' ' + appointment.professional.lastName}</span>
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <h4 className="font-semibold text-sm">Paciente</h4>
-              <div className="flex items-center gap-2 text-sm">
-                <UserIcon size={16}/>
-                <span>{appointment.attendant.firstName + ' ' + appointment.attendant.lastName}</span>
-              </div>
-            </div>
-
-            {appointment.canceled && appointment.cancellationReason && (
-              <div className="space-y-1">
-                <h4 className="font-semibold text-sm">Motivo de Cancelación</h4>
-                <p className="text-sm">{appointment.cancellationReason}</p>
-              </div>
-            )}
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 function toEventsInputs(appointments: Appointment[]): EventInput[] {
   return appointments.map((appointment) => {
     const range = appointment.range;
+    const canceled = appointment.canceled;
 
-    const scheduleColor = getCSSVariableValue("--primary");
-    const scheduletextColor = getCSSVariableValue("--primary-foreground");
+    const scheduleColor = canceled
+      ? getCSSVariableValue("--destructive")
+      : getCSSVariableValue("--primary");
+    const scheduletextColor = canceled
+      ? getCSSVariableValue("--destructive-foreground")
+      : getCSSVariableValue("--primary-foreground");
+
     return {
       id: appointment.id.toString(),
       title: `${appointment.professional.firstName} ${appointment.professional.lastName}`,

@@ -46,12 +46,12 @@ export default function TipsPage() {
       {
         header: "Título",
         accessorKey: "title",
-        enableSorting: false,
+        enableSorting: true,
       },
       {
         header: "Resumen",
         accessorKey: "summary",
-        enableSorting: false,
+        enableSorting: true,
         cell: ({row}) => {
           return <Truncate text={row.original.summary}/>
         }
@@ -59,7 +59,7 @@ export default function TipsPage() {
       {
         header: "Descripción",
         accessorKey: "description",
-        enableSorting: false,
+        enableSorting: true,
         cell: ({row}) => {
           return <Truncate text={row.original.description}/>
         }
@@ -67,6 +67,7 @@ export default function TipsPage() {
       {
         header: "Tags",
         accessorKey: "tags",
+        enableSorting: false,
         cell: ({row}) => {
           return <ItemsOnRounded items={row.original.tags}/>
         }
@@ -74,6 +75,7 @@ export default function TipsPage() {
       {
         header: "Imagen",
         accessorKey: "image",
+        enableSorting: false,
         cell: ({row}) => {
           return <OpenImageModal fetcher={() => tipsService.getImage(row.original.id)} alt={row.original.title}/>
         },
@@ -81,8 +83,11 @@ export default function TipsPage() {
       {
         header: "Activo",
         accessorKey: "active",
+        enableSorting: false,
         cell: ({row}) => {
-          return <Checkbox checked={row.original.active} disabled/>
+          return <div className="flex items-center justify-center">
+            <Checkbox checked={row.original.active} disabled/>
+          </div>
         },
       },
     ],

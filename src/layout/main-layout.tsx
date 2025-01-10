@@ -9,7 +9,7 @@ export default function MainLayout() {
 
   return <SidebarProvider>
     <AppSidebar/>
-    <SidebarInset>
+    <SidebarInset className="overflow-hidden">
       <Outlet/>
     </SidebarInset>
   </SidebarProvider>

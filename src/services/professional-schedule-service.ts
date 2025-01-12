@@ -13,14 +13,21 @@ export interface ProfessionalSchedule extends Entity<number> {
   professional: User;
 }
 
-export interface ProfessionalScheduleDto {
-  date: Date;
+export interface ProfessionalScheduleDtoBase {
   fromHour: number;
   toHour: number;
   professionalId: number;
 }
 
-async function createAll(data: ProfessionalScheduleDto[]): Promise<ProfessionalSchedule[]> {
+export interface ProfessionalScheduleDto extends ProfessionalScheduleDtoBase {
+  date: Date;
+}
+
+export interface ProfessionalSchedulesDto extends ProfessionalScheduleDtoBase {
+  dates: Date[];
+}
+
+async function createAll(data: ProfessionalSchedulesDto): Promise<ProfessionalSchedule[]> {
   const response = await apiClient.post<any[]>(
     `${resource}/all`,
     data

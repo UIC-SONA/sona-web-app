@@ -22,8 +22,6 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select.tsx";
-import {es} from "date-fns/locale/es";
-import {DateTimePicker} from "@/components/ui/date-picker.tsx";
 import {
   EraserIcon,
   Laptop,
@@ -43,6 +41,9 @@ import {format} from "date-fns";
 import {Card, CardContent} from "@/components/ui/card.tsx";
 import UserSelect from "@/components/user-select.tsx";
 import AppointmentView from "@/components/appointment-view.tsx";
+import {CalendarDate} from "@internationalized/date";
+import DatePicker from "@/components/ui/date/date-picker.tsx";
+import {ZONE_ID} from "@/constans.ts";
 
 
 export function AppointmentPage() {
@@ -82,7 +83,7 @@ export function AppointmentPage() {
         }
       },
       {
-        header: "Atendido",
+        header: "Usuario",
         cell: ({row}) => {
           const attendant = row.original.attendant;
           return `${attendant.firstName} ${attendant.lastName}`
@@ -98,9 +99,9 @@ export function AppointmentPage() {
       },
       {
         header: "Cancelado",
-        accessorKey: "cancelled",
+        accessorKey: "canceled",
         cell: ({row}) => {
-          return <div>
+          return <div className="flex items-center justify-center">
             <Checkbox checked={row.original.canceled}/>
           </div>
         },
@@ -146,14 +147,16 @@ function FilterComponent({filters}: Readonly<FilterComponentProps<AppointmentFil
   const [user, setUser] = useState<User | undefined>();
 
   useEffect(() => {
-    console.log(professionalId);
     if (!professionalId) setProfessional(undefined);
   }, [professionalId]);
 
   useEffect(() => {
-    console.log(userId);
     if (!userId) setUser(undefined);
   }, [userId]);
+
+  const fromValue = from ? new CalendarDate(from.getFullYear(), from.getMonth() + 1, from.getDate()) : null;
+  const toValue = to ? new CalendarDate(to.getFullYear(), to.getMonth() + 1, to.getDate()) : null;
+
 
   return (
     <Card className="my-4">
@@ -200,22 +203,18 @@ function FilterComponent({filters}: Readonly<FilterComponentProps<AppointmentFil
             />
           </div>
           <div className="grid gap-2">
-            <DateTimePicker
-              placeholder={"Desde"}
-              locale={es}
-              value={from}
-              onChange={(date) => filters.set("from", date)}
-              granularity="day"
+            <DatePicker<CalendarDate>
+              placeHolder="Desde"
+              value={fromValue}
+              onChange={(date) => filters.set("from", date ? date.toDate(ZONE_ID) : undefined)}
             />
           </div>
 
           <div className="grid gap-2">
-            <DateTimePicker
-              placeholder={"Hasta"}
-              locale={es}
-              value={to}
-              onChange={(date) => filters.set("to", date)}
-              granularity="day"
+            <DatePicker<CalendarDate>
+              placeHolder="Hasta"
+              value={toValue}
+              onChange={(date) => filters.set("to", date ? date.toDate(ZONE_ID) : undefined)}
             />
           </div>
 

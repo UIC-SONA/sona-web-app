@@ -2,6 +2,7 @@ import BreadcrumbSubLayout from "@/layout/breadcrumb-sub-layout.tsx";
 import {
   ProfessionalSchedule,
   ProfessionalScheduleDto,
+  ProfessionalSchedulesDto,
   professionalScheduleService,
 } from "@/services/professional-schedule-service.ts";
 import {
@@ -27,7 +28,7 @@ import {useAuth} from "@/context/auth-context.tsx";
 import {
   Calendar,
   EditIcon,
-  LoaderCircle, SaveIcon,
+  LoaderCircle,
   TrashIcon
 } from "lucide-react";
 import {Button} from "@/components/ui/button.tsx";
@@ -49,9 +50,8 @@ import {
   FormComponentProps,
   UpdateForm
 } from "@/components/crud/crud-forms.tsx";
-import {DateTimePicker} from "@/components/ui/date-picker.tsx";
 import {
-  Dialog, DialogClose,
+  Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -67,10 +67,11 @@ import {Label} from "@/components/ui/label.tsx";
 import {useTheme} from "@/context/theme-context.tsx";
 import FullCalendar from "@fullcalendar/react";
 import FullCalendarController from "@/components/full-calendar/full-calendar-controller.tsx";
-import {Card, CardContent} from "@/components/ui/card.tsx";
-import {Checkbox} from "@/components/ui/checkbox.tsx";
-import {Form, useForm, UseFormReturn} from "react-hook-form";
-import {zodResolver} from "@hookform/resolvers/zod";
+import {Card} from "@/components/ui/card.tsx";
+import {CalendarDate, today} from "@internationalized/date";
+import DateRangePicker from "@/components/ui/date/date-range-picker.tsx";
+import DatePicker from "@/components/ui/date/date-picker.tsx";
+import {ZONE_ID} from "@/constans.ts";
 
 export default function ProfessionalSchedulePage() {
   const {authenticated} = useAuth();
@@ -94,8 +95,6 @@ export default function ProfessionalSchedulePage() {
   const [createScheduleOpen, setCreateScheduleOpen] = useState(false);
   const [updateScheduleOpen, setUpdateScheduleOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [batchModeOpen, setBatchModeOpen] = useState(false);
-  const [batchMode, setBatchMode] = useState(false);
 
   const calendarRef = useRef<FullCalendar | null>(null);
 
@@ -103,8 +102,8 @@ export default function ProfessionalSchedulePage() {
     return schedules.find((schedule) => schedule.id.toString() === id) as ProfessionalSchedule;
   }
 
-  const addSchedule = (schedule: ProfessionalSchedule) => {
-    setSchedules([...schedules, schedule]);
+  const addSchedules = (newSchedules: ProfessionalSchedule[]) => {
+    setSchedules([...schedules, ...newSchedules]);
   }
 
   const removeSchedule = (schedule: ProfessionalSchedule) => {
@@ -178,7 +177,6 @@ export default function ProfessionalSchedulePage() {
               value={professional}
               onSelect={setProfessional}
               fetchItems={async (search) => {
-
                 const professionals = await userService.page({
                   search,
                   page: 0,
@@ -187,7 +185,6 @@ export default function ProfessionalSchedulePage() {
                     authorities: [Authority.LEGAL_PROFESSIONAL, Authority.MEDICAL_PROFESSIONAL]
                   },
                 });
-
                 return professionals.content;
               }}
               comboboxItem={(professional) => ({
@@ -199,7 +196,7 @@ export default function ProfessionalSchedulePage() {
           <div className="col-span-1 md:col-span-2 lg:col-span-1">
             <Button
               className="w-full"
-              onClick={() => setBatchModeOpen(true)} disabled={!professional}
+              onClick={() => setCreateScheduleOpen(true)} disabled={!professional}
             >
               <Calendar className="mr-2 h-4 w-4"/>
               Agregar horario
@@ -217,8 +214,8 @@ export default function ProfessionalSchedulePage() {
         </div>
       </div>
 
-      <div className="mt-4 relative">
-        <div className="absolute bottom-4 transform z-10">
+      <div className="mt-4">
+        <div>
           <FullCalendarController
             calendarRef={calendarRef}
           />
@@ -244,19 +241,11 @@ export default function ProfessionalSchedulePage() {
           setUpdateScheduleOpen={setUpdateScheduleOpen}
         />
 
-        <SelectCreationModelAlertDialog
-          open={batchModeOpen}
-          setOpen={setBatchModeOpen}
-          setBatchMode={setBatchMode}
-          setCreateScheduleOpen={setCreateScheduleOpen}
-        />
-
         <CreateScheduleForm
           open={createScheduleOpen}
           setOpen={setCreateScheduleOpen}
           professional={professional}
-          addSchedule={addSchedule}
-          batch={batchMode}
+          addSchedules={addSchedules}
         />
 
         <UpdateScheduleForm
@@ -278,49 +267,6 @@ export default function ProfessionalSchedulePage() {
     </BreadcrumbSubLayout>
   );
 }
-
-interface SelectCreationModelAlertDialogProps {
-  open: boolean;
-  setOpen: Dispatch<SetStateAction<boolean>>;
-  setBatchMode: Dispatch<SetStateAction<boolean>>;
-  setCreateScheduleOpen: Dispatch<SetStateAction<boolean>>;
-}
-
-function SelectCreationModelAlertDialog(
-  {
-    open,
-    setOpen,
-    setBatchMode,
-    setCreateScheduleOpen
-  }: Readonly<SelectCreationModelAlertDialogProps>
-) {
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Seleccionar modo de creación</DialogTitle>
-        </DialogHeader>
-        <DialogFooter>
-          <Button onClick={() => {
-            setBatchMode(true);
-            setCreateScheduleOpen(true);
-            setOpen(false);
-          }}>
-            Crear en rango
-          </Button>
-          <Button onClick={() => {
-            setBatchMode(false);
-            setCreateScheduleOpen(true);
-            setOpen(false);
-          }}>
-            Crear individual
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 
 interface ScheduleViewProps {
   schedule?: ProfessionalSchedule;
@@ -353,7 +299,7 @@ function ScheduleView({schedule, open, setOpen, setDeleteOpen, setUpdateSchedule
             <TrashIcon/>
             Eliminar
           </Button>
-          <Button onClick={() => setUpdateScheduleOpen(true)}>
+          <Button onClick={() => setUpdateScheduleOpen(true)} >
             <EditIcon/>
             Editar
           </Button>
@@ -367,12 +313,18 @@ interface CreateScheduleFormProps {
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
   professional?: User;
-  addSchedule: (schedule: ProfessionalSchedule) => void;
-  batch?: boolean;
+  addSchedules: (schedule: ProfessionalSchedule[]) => void;
 }
 
 const scheduleSchema: CrudSchema<ProfessionalScheduleDto> = z.object({
   date: z.date(),
+  fromHour: z.coerce.number().min(0).max(24),
+  toHour: z.coerce.number().min(0).max(24),
+  professionalId: z.number(),
+});
+
+const schendulesSchema: CrudSchema<ProfessionalSchedulesDto> = z.object({
+  dates: z.array(z.date()),
   fromHour: z.coerce.number().min(0).max(24),
   toHour: z.coerce.number().min(0).max(24),
   professionalId: z.number(),
@@ -383,25 +335,12 @@ function CreateScheduleForm(
     open,
     setOpen,
     professional,
-    addSchedule,
-    batch
+    addSchedules,
   }: Readonly<CreateScheduleFormProps>
 ) {
 
-  if (batch) {
-    return <BatchScheduleDialog
-      open={open}
-      onOpenChange={setOpen}
-      professional={professional}
-      onSubmit={async (schedules) => {
-        const created = await professionalScheduleService.createAll(schedules);
-        created.forEach(addSchedule);
-      }}
-    />
-  }
-
-  return <CreateForm<ProfessionalSchedule, ProfessionalScheduleDto, number>
-    create={professionalScheduleService.create}
+  return <CreateForm<ProfessionalSchedule[], ProfessionalSchedulesDto>
+    create={professionalScheduleService.createAll}
     open={open}
     setOpen={setOpen}
     title="Agregar horario de atención"
@@ -411,17 +350,17 @@ function CreateScheduleForm(
       description: "El horario de atención ha sido agregado correctamente.",
     }}
     form={{
-      FormComponent: (props) => <FormComponent {...props} professional={professional}/>,
-      schema: scheduleSchema,
+      FormComponent: (props) => <CreateFormSchedule {...props} professional={professional}/>,
+      schema: schendulesSchema,
       defaultValues: {
-        date: new Date(),
+        dates: [new Date()],
         fromHour: 8,
         toHour: 18,
         professionalId: professional?.id,
       },
     }}
     onSuccess={(schedule) => {
-      addSchedule(schedule);
+      addSchedules(schedule);
     }}
   />
 }
@@ -476,7 +415,7 @@ function UpdateScheduleForm(
       description: "El horario de atención ha sido actualizado correctamente.",
     }}
     form={{
-      FormComponent: (props) => <FormComponent {...props} entity={schedule}/>,
+      FormComponent: (props) => <UpdateFormSchedule {...props} entity={schedule}/>,
       schema: scheduleSchema,
       defaultValues: defaultValues,
     }}
@@ -516,13 +455,89 @@ function DeleteScheduleForm({open, setOpen, schedule, removeSchedule, setSchedul
   />
 }
 
-
-interface FormScheduleProps extends FormComponentProps<ProfessionalSchedule, ProfessionalScheduleDto> {
+interface CreateFormScheduleProps extends FormComponentProps<ProfessionalSchedule[], ProfessionalSchedulesDto> {
   professional?: User;
 }
 
-function FormComponent({form, entity, professional}: Readonly<FormScheduleProps>) {
-  const now = new Date();
+function CreateFormSchedule({form, professional}: Readonly<CreateFormScheduleProps>) {
+  const now = today(ZONE_ID);
+
+  useEffect(() => {
+    if (!professional) return;
+    form.setValue("professionalId", professional.id);
+  }, [professional]);
+
+  return <div className="gap-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+    <FormField
+      control={form.control}
+      name="dates"
+      render={({field}) => {
+
+        return (
+          <FormItem className="col-span-1 sm:col-span-2 md:col-span-2">
+            <FormLabel>Fecha</FormLabel>
+            <DateRangePicker<CalendarDate>
+              isDateUnavailable={(date) => date.compare(now) < 0}
+              onChange={value => {
+                if (!value) {
+                  field.onChange([]);
+                  return;
+                }
+                const startDate = value.start.toDate(ZONE_ID);
+                const endDate = value.end.toDate(ZONE_ID);
+                field.onChange(getDays(startDate, endDate));
+              }}
+            />
+            <FormMessage/>
+          </FormItem>
+        );
+      }}
+    />
+
+    <FormField
+      control={form.control}
+      name="fromHour"
+      render={({field}) => (
+        <FormItem className="col-span-1">
+          <FormLabel>Hora de inicio</FormLabel>
+          <FormControl>
+            <Input type="number" {...field} />
+          </FormControl>
+          <FormMessage/>
+        </FormItem>
+      )}
+    />
+
+    <FormField
+      control={form.control}
+      name="toHour"
+      render={({field}) => (
+        <FormItem className="col-span-1">
+          <FormLabel>Hora de fin</FormLabel>
+          <FormControl>
+            <Input type="number" {...field} />
+          </FormControl>
+          <FormMessage/>
+        </FormItem>
+      )}
+    />
+  </div>
+}
+
+function getDays(start: Date, end: Date): Date[] {
+  const dates = [];
+  for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
+    dates.push(new Date(d));
+  }
+  return dates;
+}
+
+interface UpdateFormScheduleProps extends FormComponentProps<ProfessionalSchedule, ProfessionalScheduleDto> {
+  professional?: User;
+}
+
+function UpdateFormSchedule({form, entity, professional}: Readonly<UpdateFormScheduleProps>) {
+  const now = today(ZONE_ID);
 
   useEffect(() => {
     if (!professional) return;
@@ -548,15 +563,22 @@ function FormComponent({form, entity, professional}: Readonly<FormScheduleProps>
       control={form.control}
       name="date"
       render={({field}) => {
+        const date: Date | undefined = field.value;
+        const value = date ? new CalendarDate(date.getFullYear(), date.getMonth(), date.getDate()) : undefined;
+
         return (
           <FormItem className="col-span-1 sm:col-span-2 md:col-span-2">
             <FormLabel>Fecha</FormLabel>
-            <DateTimePicker
-              locale={es}
-              value={field.value}
-              onChange={field.onChange}
-              granularity="day"
-              disabled={(date) => date < now}
+            <DatePicker<CalendarDate>
+              isDateUnavailable={(date) => date.compare(now) < 0}
+              defaultValue={value}
+              onChange={(value) => {
+                if (!value) {
+                  field.onChange(undefined);
+                  return;
+                }
+                field.onChange(value.toDate(ZONE_ID));
+              }}
             />
             <FormMessage/>
           </FormItem>
@@ -600,7 +622,7 @@ function toEventsInputs(schedule: ProfessionalSchedule[], appoinments: Appointme
   const scheduleColor = getCSSVariableValue("--primary");
   const scheduletextColor = getCSSVariableValue("--primary-foreground");
 
-  const events = schedule.map<EventInput>((schedule) => {
+  const schenduleEvents = schedule.map<EventInput>((schedule) => {
     const date = schedule.date;
     const from = new Date(date.getFullYear(), date.getMonth(), date.getDate(), schedule.fromHour);
     const to = new Date(date.getFullYear(), date.getMonth(), date.getDate(), schedule.toHour);
@@ -640,299 +662,5 @@ function toEventsInputs(schedule: ProfessionalSchedule[], appoinments: Appointme
     };
   });
 
-  return [...events, ...appoinmentsEvents];
-}
-
-
-interface BatchScheduleEntity {
-  startDate?: Date;
-  endDate?: Date;
-  fromHour?: number;
-  toHour?: number;
-  selectedDays?: number[];
-  professionalId?: number;
-}
-
-interface BatchScheduleFormProps {
-  form: UseFormReturn<BatchScheduleFormValues>;
-  entity: BatchScheduleEntity | null;
-}
-
-interface BatchScheduleDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSubmit: (schedules: ProfessionalScheduleDto[]) => Promise<void>;
-  loading?: boolean;
-  professional?: User;
-  entity?: BatchScheduleEntity | null;
-}
-
-interface WeekDay {
-  id: number;
-  label: string;
-}
-
-// Constantes
-const WEEKDAYS: WeekDay[] = [
-  {id: 1, label: "Lunes"},
-  {id: 2, label: "Martes"},
-  {id: 3, label: "Miércoles"},
-  {id: 4, label: "Jueves"},
-  {id: 5, label: "Viernes"},
-  {id: 6, label: "Sábado"},
-  {id: 0, label: "Domingo"}
-];
-
-// Schema de validación
-const batchScheduleSchema = z.object({
-  startDate: z.date({
-    required_error: "La fecha inicial es requerida",
-  }),
-  endDate: z.date({
-    required_error: "La fecha final es requerida",
-  }),
-  fromHour: z.number()
-    .min(0, "La hora debe ser entre 0 y 24")
-    .max(24, "La hora debe ser entre 0 y 24"),
-  toHour: z.number()
-    .min(0, "La hora debe ser entre 0 y 24")
-    .max(24, "La hora debe ser entre 0 y 24"),
-  selectedDays: z.array(z.number())
-    .min(1, "Debe seleccionar al menos un día"),
-  professionalId: z.number(),
-}).refine(data => data.fromHour < data.toHour, {
-  message: "La hora de inicio debe ser menor que la hora de fin",
-  path: ["fromHour"],
-}).refine(data => data.startDate <= data.endDate, {
-  message: "La fecha final debe ser posterior a la inicial",
-  path: ["endDate"],
-});
-
-type BatchScheduleFormValues = z.infer<typeof batchScheduleSchema>;
-
-function BatchScheduleFormComponent({form}: Readonly<BatchScheduleFormProps>) {
-  return (
-    <Card className="p-4">
-      <CardContent className="space-y-4 pt-0">
-        <div className="grid gap-4 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="startDate"
-            render={({field}) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Fecha inicial</FormLabel>
-                <DateTimePicker
-                  granularity="day"
-                  value={field.value}
-                  onChange={field.onChange}
-                  locale={es}
-                />
-                <FormMessage/>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="endDate"
-            render={({field}) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Fecha final</FormLabel>
-                <DateTimePicker
-                  granularity="day"
-                  value={field.value}
-                  onChange={field.onChange}
-                  locale={es}
-                  disabled={(date) => {
-                    const startDate = form.getValues("startDate");
-                    return startDate ? date < startDate : false;
-                  }}
-                />
-                <FormMessage/>
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="fromHour"
-            render={({field}) => (
-              <FormItem>
-                <FormLabel>Hora de inicio</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={23}
-                    {...field}
-                    onChange={e => field.onChange(Number(e.target.value))}
-                  />
-                </FormControl>
-                <FormMessage/>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="toHour"
-            render={({field}) => (
-              <FormItem>
-                <FormLabel>Hora de fin</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={24}
-                    {...field}
-                    onChange={e => field.onChange(Number(e.target.value))}
-                  />
-                </FormControl>
-                <FormMessage/>
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="selectedDays"
-          render={() => (
-            <FormItem>
-              <div className="mb-4">
-                <FormLabel>Días de la semana</FormLabel>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {WEEKDAYS.map((day) => (
-                  <FormField
-                    key={day.id}
-                    control={form.control}
-                    name="selectedDays"
-                    render={({field}) => {
-                      return (
-                        <FormItem
-                          key={day.id}
-                          className="flex flex-row items-center space-x-2"
-                        >
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value?.includes(day.id)}
-                              onCheckedChange={(checked) => {
-                                const current = field.value || [];
-                                const updated = checked
-                                  ? [...current, day.id]
-                                  : current.filter((value) => value !== day.id);
-                                field.onChange(updated);
-                              }}
-                            />
-                          </FormControl>
-                          <FormLabel className="font-normal">
-                            {day.label}
-                          </FormLabel>
-                        </FormItem>
-                      );
-                    }}
-                  />
-                ))}
-              </div>
-              <FormMessage/>
-            </FormItem>
-          )}
-        />
-      </CardContent>
-    </Card>
-  );
-}
-
-const generateSchedules = (formData: BatchScheduleFormValues): ProfessionalScheduleDto[] => {
-  const schedules: ProfessionalScheduleDto[] = [];
-  const current = new Date(formData.startDate);
-  const end = new Date(formData.endDate);
-
-  while (current <= end) {
-    const dayOfWeek = current.getDay();
-
-    if (formData.selectedDays.includes(dayOfWeek)) {
-      schedules.push({
-        date: current,
-        fromHour: formData.fromHour,
-        toHour: formData.toHour,
-        professionalId: formData.professionalId
-      });
-    }
-
-    current.setDate(current.getDate() + 1);
-  }
-
-  return schedules;
-};
-
-function BatchScheduleDialog(
-  {
-    open,
-    onOpenChange,
-    onSubmit,
-    loading = false,
-    professional,
-    entity = null,
-  }: Readonly<BatchScheduleDialogProps>) {
-
-  const form = useForm<BatchScheduleFormValues>({
-    resolver: zodResolver(batchScheduleSchema),
-    defaultValues: {
-      startDate: entity?.startDate || new Date(),
-      endDate: entity?.endDate || new Date(),
-      fromHour: entity?.fromHour ?? 8,
-      toHour: entity?.toHour ?? 17,
-      selectedDays: entity?.selectedDays || [],
-      professionalId: professional?.id,
-    },
-  });
-
-  const handleSubmit = async (data: BatchScheduleFormValues) => {
-    const schedules = generateSchedules(data);
-    await onSubmit(schedules);
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
-      <DialogContent
-        className="max-w-[80vw] max-h-[80vh] overflow-y-auto"
-        onInteractOutside={(e) => e.preventDefault()}
-      >
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} autoComplete="off">
-            <DialogHeader className="mb-5">
-              <DialogTitle className="text-2xl font-bold">
-                Configuración de horarios en rango
-              </DialogTitle>
-              <DialogDescription>
-                Configure los horarios de atención para múltiples días
-              </DialogDescription>
-            </DialogHeader>
-
-            <BatchScheduleFormComponent form={form} entity={entity}/>
-
-            <DialogFooter className="justify-end mt-4">
-              <DialogClose asChild>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="mt-3 sm:mt-0"
-                >
-                  Cancelar
-                </Button>
-              </DialogClose>
-              <Button type="submit" disabled={loading}>
-                {loading ? <LoaderCircle className="animate-spin"/> : <SaveIcon/>}
-                Guardar
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
+  return [...schenduleEvents, ...appoinmentsEvents];
 }

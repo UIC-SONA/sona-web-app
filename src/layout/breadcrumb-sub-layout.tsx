@@ -44,7 +44,7 @@ export default function BreadcrumbSubLayout({children, items}: Readonly<Bradcrum
         </Breadcrumb>
       </div>
     </header>
-    <main className="p-4 flex-1 mb-[4rem]">
+    <main className="p-4 flex-1 mb-[4rem] overflow-y-auto">
       <div className="absolute top-4 right-4">
         <ThemeToggle/>
       </div>

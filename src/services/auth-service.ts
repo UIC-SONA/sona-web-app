@@ -29,6 +29,18 @@ export interface AccessTokenError {
   error_description: string;
 }
 
+export function isAccessToken(token: unknown): token is AccessToken {
+  return (
+    typeof token === 'object' &&
+    token !== null &&
+    'access_token' in token &&
+    'expires_in' in token &&
+    'refresh_token' in token &&
+    'token_type' in token &&
+    'scope' in token
+  );
+}
+
 export function isAccessTokenError(error: unknown): error is AccessTokenError {
   return (
     typeof error === 'object' &&
@@ -150,7 +162,12 @@ export function canRefresh(accessToken: AccessToken): boolean {
   return !isExpiredTime(decoded.exp as number * 1000);
 }
 
-export async function updateAndLoadAccessToken(ifExpired?: () => void): Promise<AccessToken | null> {
+export enum RefreshTokenBadResult {
+  NO_TOKEN,
+  EXPIRED_TOKEN,
+}
+
+export async function updateAndLoadAccessToken(): Promise<AccessToken | RefreshTokenBadResult> {
   const storedToken = loadAccessToken();
   if (storedToken) {
     if (!isExpired(storedToken)) {
@@ -162,10 +179,10 @@ export async function updateAndLoadAccessToken(ifExpired?: () => void): Promise<
       return refreshedToken;
     } else {
       clearAccessToken();
-      ifExpired?.();
+      return RefreshTokenBadResult.EXPIRED_TOKEN;
     }
   }
-  return null;
+  return RefreshTokenBadResult.NO_TOKEN;
 }
 
 export function loadAccessToken(): AccessToken | null {

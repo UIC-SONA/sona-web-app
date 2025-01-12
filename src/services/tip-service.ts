@@ -55,13 +55,13 @@ function dtoTranformer(dto: TipDto): FormData {
   return formData;
 }
 
+const commonHeaders = {
+  'Content-Type': 'multipart/form-data',
+};
+
 const headers: CrudHeadersConfig = {
-  creatable: {
-    'Content-Type': 'multipart/form-data',
-  },
-  updatable: {
-    'Content-Type': 'multipart/form-data',
-  },
+  creatable: commonHeaders,
+  updatable: commonHeaders,
 };
 
 const crudOperations = restCrud<Tip, TipDto, string>(
@@ -69,7 +69,7 @@ const crudOperations = restCrud<Tip, TipDto, string>(
   resource,
   {
     headers,
-    dtoTranformer
+    dtoTranformer,
   }
 );
 

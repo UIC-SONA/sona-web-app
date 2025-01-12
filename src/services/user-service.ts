@@ -47,7 +47,7 @@ export interface UserFilter {
 }
 
 
-export async function singUp(signUp: SingUp): Promise<Message> {
+async function singUp(signUp: SingUp): Promise<Message> {
   const response = await apiClient.post<Message>(
     `${resource}/sign-up`,
     signUp,
@@ -56,7 +56,7 @@ export async function singUp(signUp: SingUp): Promise<Message> {
   return response.data;
 }
 
-export async function getProfilePicture(): Promise<string> {
+async function getProfilePicture(): Promise<string> {
   const response = await apiClient.get<string>(
     `${resource}/profile-picture`,
     {
@@ -68,7 +68,7 @@ export async function getProfilePicture(): Promise<string> {
   return `data:${contentType};base64,${base64}`;
 }
 
-export async function saveProfilePicture(file: File): Promise<Message> {
+async function saveProfilePicture(file: File): Promise<Message> {
   const formData = new FormData();
   formData.append('file', file);
 
@@ -85,7 +85,7 @@ export async function saveProfilePicture(file: File): Promise<Message> {
   return response.data;
 }
 
-export async function deleteProfilePicture(): Promise<Message> {
+async function deleteProfilePicture(): Promise<Message> {
   const response = await apiClient.delete<Message>(
     `${resource}/profile-picture`,
   );
@@ -93,7 +93,7 @@ export async function deleteProfilePicture(): Promise<Message> {
   return response.data;
 }
 
-export async function profile(): Promise<User> {
+async function profile(): Promise<User> {
   const response = await apiClient.get<User>(
     `${resource}/profile`,
   );
@@ -117,7 +117,7 @@ function getAuthorityName(authority: Authority): string {
 }
 
 
-const crudOperations = restCrud<User, UserDto, number, UserFilter>(apiClient, resource);
+const crudOperations = restCrud<User, UserDto, number, UserFilter>(apiClient, resource)
 
 export const userService = {
   ...crudOperations,

@@ -57,7 +57,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
 import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
-import {extractError,} from "@/lib/errors.ts";
+import {introspect,} from "@/lib/errors.ts";
 import {useIsFirstRender} from "@/hooks/use-is-first-rendered.ts";
 import {
   CreateForm,
@@ -208,13 +208,12 @@ export function CrudOperationsTable<
     if (!page) return;
     try {
 
-      console.log("fetching data");
-
       const query: PageQuery<E> = {
         search,
         page: pagination.pageIndex,
         sorts: getSortParams(),
         size: pagination.pageSize,
+        filters,
       };
 
       const results = await page(query);
@@ -231,7 +230,7 @@ export function CrudOperationsTable<
 
     } catch (error) {
       //
-      const {title, description} = extractError(error);
+      const {title, description} = introspect(error);
       pushAlertDialog({type: "error", title, description});
       //
     } finally {
@@ -253,7 +252,7 @@ export function CrudOperationsTable<
   useEffect(() => {
     if (isFirstRender) return;
     loadData();
-  }, [pagination.pageIndex, pagination.pageSize, sorting]);
+  }, [pagination.pageIndex, pagination.pageSize, sorting, filters]);
 
   useEffect(() => {
     if (isFirstRender) return;
@@ -373,7 +372,7 @@ export function CrudOperationsTable<
               const headClassName = "font-bold text-primary-foreground";
 
               return (
-                <TableRow key={headerGroup.id}>
+                <TableRow key={headerGroup.id} className="hover:bg-primary">
                   {headerGroup.headers.map((header) => {
                     const column = header.column;
                     const columnDef = column.columnDef;
@@ -665,7 +664,7 @@ function EntityActions<TData extends Entity<ID>, Dto, ID>(
 }
 
 interface CreateActionProps<TData extends Entity<ID>, Dto, ID> {
-  form: FormConfig<TData, Dto, ID>,
+  form: FormConfig<TData, Dto>,
   create: (data: Dto) => Promise<TData>,
   reload: () => void,
 }

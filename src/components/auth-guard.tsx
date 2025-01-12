@@ -11,7 +11,6 @@ import {
 } from "react";
 import {cn} from "@/lib/utils.ts";
 import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
-import {Button} from "@/components/ui/button.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
 
 
@@ -25,11 +24,9 @@ export default function AuthGuard() {
     if (initializing) return;
     if (authenticated) {
       if (pathname.startsWith('/auth')) {
-        console.log('Already authenticated, redirecting to home');
         navigate('/');
       }
     } else if (!pathname.startsWith('/auth')) {
-      console.log('No access token, redirecting to login');
       navigate('/auth/login');
     }
   }, [initializing, pathname, navigate, authenticated]);
@@ -44,8 +41,7 @@ export default function AuthGuard() {
         clearError();
       }
     });
-  }, [clearError, error, navigate, pushAlertDialog]);
-
+  }, [error]);
 
   if (initializing) {
     return <div className="w-screen h-screen flex items-center justify-center flex-col">
@@ -58,21 +54,10 @@ export default function AuthGuard() {
   }
 
   if (error) {
-    return <div className="w-screen h-screen flex items-center justify-center flex-col">
-      <div className="absolute top-4 right-4">
-        <ThemeToggle/>
-      </div>
-      <h1>Error de autenticación</h1>
-      <p className="text-center my-4">
-        {error.description}
-      </p>
-      <Button onClick={() => {
-        navigate('/auth/login');
-        clearError();
-      }}/>
-    </div>
+    return <div
+      className="w-screen h-screen flex items-center justify-center flex-col gap-4 bg-background text-primary"
+    />
   }
-
   return <Outlet/>;
 }
 

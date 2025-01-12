@@ -1,6 +1,7 @@
 import {clsx, type ClassValue} from "clsx"
 import {twMerge} from "tailwind-merge"
 import {Dispatch, SetStateAction} from "react";
+import {DateValue} from "react-aria-components";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -23,3 +24,8 @@ export function getPeriod(number?: number): string {
   if (number === undefined) return "";
   return number < 12 ? "AM" : "PM";
 }
+
+export function onlyDate(value: DateValue): Date {
+  return new Date(value.year, value.month - 1, value.day);
+}
+

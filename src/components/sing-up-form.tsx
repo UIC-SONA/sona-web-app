@@ -12,7 +12,6 @@ import {Button} from "@/components/ui/button.tsx";
 import {Loader2, LockIcon, Mail, UserIcon} from "lucide-react";
 import {Link} from "react-router";
 import {FormEvent, useState} from "react";
-import {singUp} from "@/services/user-service.ts";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -21,8 +20,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog.tsx";
-import {extractError} from "@/lib/errors.ts";
+import {introspect} from "@/lib/errors.ts";
 import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
+import {userService} from "@/services/user-service.ts";
 
 
 export default function SingUpForm() {
@@ -60,10 +60,10 @@ export default function SingUpForm() {
 
     try {
       setLoading(true);
-      await singUp({username, password, firstName, lastName, email});
+      await userService.singUp({username, password, firstName, lastName, email});
       setSuccess(true);
     } catch (error) {
-      const err = extractError(error);
+      const err = introspect(error);
       pushAlertDialog({
         type: "error",
         title: err.title,

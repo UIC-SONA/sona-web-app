@@ -1,4 +1,10 @@
-import {BadgeCheck, Bell, ChevronsUpDown, LogOut,} from "lucide-react"
+import {
+  BadgeCheck,
+  Bell,
+  ChevronsUpDown,
+  LogOut,
+  MessageSquare,
+} from "lucide-react"
 
 import {
   Avatar,
@@ -20,10 +26,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import {getProfilePicture, User} from "@/services/user-service.ts";
+import {User, userService} from "@/services/user-service.ts";
 import {useEffect, useState} from "react";
 import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
+import {Link} from "react-router";
 
 
 export interface NavUserProps {
@@ -37,7 +44,7 @@ export function NavUser({user}: Readonly<NavUserProps>) {
   const [profileImage, setProfileImage] = useState<string | null>(null)
 
   useEffect(() => {
-    getProfilePicture()
+    userService.getProfilePicture()
       .then(setProfileImage)
       .catch(() => setProfileImage(null))
   }, [user.id])
@@ -47,9 +54,7 @@ export function NavUser({user}: Readonly<NavUserProps>) {
       type: "question",
       title: "¿Seguro que deseas cerrar sesión?",
       description: "Si cierras sesión, tendrás que volver a iniciar sesión para acceder a tu cuenta.",
-      onConfirm: async () => {
-        await logoutUser()
-      }
+      onConfirm: logoutUser
     })
   }
 
@@ -84,7 +89,11 @@ export function NavUser({user}: Readonly<NavUserProps>) {
             </DropdownMenuItem>
             <DropdownMenuItem>
               <Bell/>
-              Notificaciones
+              <Link to="/notifications">Notificaciones</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <MessageSquare/>
+              <Link to="/messages">Mensajes</Link>
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator/>

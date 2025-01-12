@@ -20,20 +20,13 @@ import {
 } from "@/components/ui/sidebar"
 import onlyLogo from "@/assets/only_logo.png";
 import {Separator} from "@/components/ui/separator.tsx";
-import {
-  useEffect,
-  useState
-} from "react";
-import {
-  profile,
-  User
-} from "@/services/user-service.ts";
 import {Link} from "react-router";
 import {
   NavItem,
   NavMain
 } from "@/components/layout/nav-main.tsx";
 import {NavUser} from "@/components/layout/nav-user.tsx";
+import {useAuth} from "@/context/auth-context.tsx";
 
 
 const navItems: NavItem[] = [
@@ -104,12 +97,7 @@ const navItems: NavItem[] = [
 
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
 
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    profile().then(setUser).catch(() => setUser(null));
-  }, [setUser]);
-
+  const {user} = useAuth();
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -119,7 +107,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
       <Separator/>
       <SidebarFooter>
-        {user ? <NavUser user={user}/> : <LoaderCircle/>}
+        {user ? <NavUser user={user}/> : <LoaderCircle className="w-8 h-8 animate-spin"/>}
       </SidebarFooter>
       <SidebarRail/>
     </Sidebar>

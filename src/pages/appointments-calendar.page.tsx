@@ -133,12 +133,12 @@ export default function AppointmentsCalendarPage() {
       </Card>
 
       <div className="mt-4 relative">
-        <div className="absolute bottom-4 transform z-10">
+        <div>
           <FullCalendarController
             calendarRef={calendarRef}
           />
         </div>
-        <Card className="h-[500px] overflow-y-scroll p-3 mt-4">
+        <Card className="h-[400px] overflow-y-scroll p-3 mt-4">
           <FullCalendarImproved
             locale={es}
             ref={calendarRef}
@@ -154,7 +154,6 @@ export default function AppointmentsCalendarPage() {
     </BreadcrumbSubLayout>
   );
 }
-
 
 
 function toEventsInputs(appointments: Appointment[]): EventInput[] {
@@ -186,7 +185,7 @@ function toEventsInputs(appointments: Appointment[]): EventInput[] {
           child: (
             <div className="flex flex-col space-y-2">
               <p>Profesional: {appointment.professional.firstName} {appointment.professional.lastName}</p>
-              <p>Atendido: {appointment.attendant.firstName} {appointment.attendant.lastName}</p>
+              <p>Usuario: {appointment.attendant.firstName} {appointment.attendant.lastName}</p>
               <p>{range.from.toLocaleDateString()} {range.from.toLocaleTimeString()} - {range.to.toLocaleTimeString()}</p>
             </div>
           )

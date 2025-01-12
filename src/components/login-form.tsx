@@ -18,7 +18,7 @@ import {
   useNavigate
 } from "react-router";
 import {FormEvent, useState} from "react";
-import {extractError} from "@/lib/errors.ts";
+import {introspect} from "@/lib/errors.ts";
 import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
 
@@ -40,7 +40,7 @@ export default function LoginForm() {
       await loginUser(username, password);
       navigate("/");
     } catch (error) {
-      const err = extractError(error);
+      const err = introspect(error);
       pushAlertDialog({
         type: "error",
         title: err.title,

@@ -25,7 +25,7 @@ import {
   TrashIcon
 } from "lucide-react";
 import {
-  extractError,
+  introspect,
   extractProblemDetails,
   ValidationError
 } from "@/lib/errors.ts";
@@ -59,7 +59,7 @@ export type FormComponentProps<TData, Dto, Extensions = {}> = {
 } & Extensions;
 
 
-export interface FormConfig<TData extends Entity<ID>, Dto, ID> {
+export interface FormConfig<TData, Dto> {
   schema: CrudSchema<Dto>,
   defaultValues: DefaultValues<Schema<Dto>>,
   FormComponent: ComponentType<FormComponentProps<TData, Dto>>,
@@ -77,23 +77,21 @@ interface BaseFormProps {
   toastAction?: { title: string, description: string },
 }
 
-interface CommonFormProps<TData extends Entity<ID>, Dto, ID> extends BaseFormPropsMutate<TData, Dto, ID> {
+interface BaseFormPropsMutate<TData, Dto> extends Omit<BaseFormProps, 'onSuccess'> {
+  form: FormConfig<TData, Dto>,
+  onSuccess?: (entity: TData) => void,
+}
+
+interface CommonFormProps<TData, Dto> extends BaseFormPropsMutate<TData, Dto> {
   onSubmitAction: (data: Dto) => Promise<TData>,
   entity?: TData,
 }
 
-
-interface BaseFormPropsMutate<TData extends Entity<ID>, Dto, ID> extends Omit<BaseFormProps, 'onSuccess'> {
-  form: FormConfig<TData, Dto, ID>,
-  onSuccess?: (entity: TData) => void,
-}
-
-
-export interface CreateFormProps<TData extends Entity<ID>, Dto, ID> extends BaseFormPropsMutate<TData, Dto, ID> {
+export interface CreateFormProps<TData, Dto> extends BaseFormPropsMutate<TData, Dto> {
   create: (data: Dto) => Promise<TData>,
 }
 
-interface UpdateFormProps<TData extends Entity<ID>, Dto, ID> extends BaseFormPropsMutate<TData, Dto, ID> {
+export interface UpdateFormProps<TData extends Entity<ID>, Dto, ID> extends BaseFormPropsMutate<TData, Dto> {
   entity: TData,
   update: (id: ID, data: Dto) => Promise<TData>,
 }
@@ -123,7 +121,7 @@ export async function dispatchSubmitAction(form: UseFormReturn<any>, action: () 
   }
 }
 
-function CommonForm<TData extends Entity<ID>, Dto, ID>(
+function CommonForm<TData, Dto>(
   {
     open,
     setOpen,
@@ -140,7 +138,7 @@ function CommonForm<TData extends Entity<ID>, Dto, ID>(
     entity,
     toastAction,
     onCancel,
-  }: Readonly<CommonFormProps<TData, Dto, ID>>
+  }: Readonly<CommonFormProps<TData, Dto>>
 ) {
 
 
@@ -220,14 +218,14 @@ function CommonForm<TData extends Entity<ID>, Dto, ID>(
   );
 }
 
-export function CreateForm<TData extends Entity<ID>, Dto, ID>(
+export function CreateForm<TData, Dto>(
   {
     create,
     title,
     description,
     toastAction,
     ...props
-  }: Readonly<CreateFormProps<TData, Dto, ID>>
+  }: Readonly<CreateFormProps<TData, Dto>>
 ) {
   return (
     <CommonForm
@@ -286,7 +284,7 @@ export function DeleteForm<TData extends Entity<ID>, ID>(
     title,
     description,
     toastAction,
-    delete: deleteCb,
+    delete: deleteFn,
   }: Readonly<DeleteFormProps<TData, ID>>
 ) {
 
@@ -304,12 +302,12 @@ export function DeleteForm<TData extends Entity<ID>, ID>(
     setLoading(true);
 
     try {
-      await deleteCb(entity.id);
+      await deleteFn(entity.id);
       onSuccess?.();
       setOpen(false);
       toast(toastAction || {title: "Registro eliminado", description: "El registro se ha eliminado correctamente"});
     } catch (error) {
-      const err = extractError(error);
+      const err = introspect(error);
       setError({type: err.title, message: err.description});
     } finally {
       setLoading(false);

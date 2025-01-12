@@ -23,6 +23,7 @@ import {ScrollArea} from './scroll-area'
 import {useEffect, useState} from "react";
 import {useDebouncedCallback} from "@/hooks/use-debounce.ts";
 import type {ClassValue} from "clsx";
+import {useIsFirstRender} from "@/hooks/use-is-first-rendered.ts";
 
 type ComboBoxItemType = {
   value: string
@@ -66,6 +67,8 @@ export function Combobox<T>(
     loadingText = 'Cargando...'
   }: Readonly<ComboboxProps<T>>
 ) {
+
+  const isFirstRender = useIsFirstRender();
   const [open, setOpen] = useState(false)
   const [hasTrigger, setHasTrigger] = useState(false)
   const [textSearch, setTextSearch] = useState('')
@@ -79,6 +82,7 @@ export function Combobox<T>(
   }
 
   useEffect(() => {
+    if (isFirstRender) return
     onSearchValueChange?.(textSearch)
   }, [textSearch])
 

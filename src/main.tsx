@@ -19,6 +19,7 @@ import ProfessionalPage from "@/pages/professional.page.tsx";
 import UserPage from "@/pages/user.page.tsx";
 import {AppointmentPage} from "@/pages/appointment.page.tsx";
 import AppointmentsCalendarPage from "@/pages/appointments-calendar.page.tsx";
+import MessagesPage from "@/pages/messages.page.tsx";
 
 
 createRoot(document.getElementById('root')!).render(
@@ -39,6 +40,7 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="appointments" element={<AppointmentPage/>}/>
                 <Route path="appointments-calendar" element={<AppointmentsCalendarPage/>}/>
               </Route>
+              <Route path="messages" element={<MessagesPage/>}/>
               <Route path="auth" element={<AuthPage/>}>
                 <Route path="login" element={<LoginForm/>}/>
                 <Route path="sign-up" element={<SingUpForm/>}/>

@@ -10,6 +10,12 @@ export interface ErrorTitle {
   description: string;
 }
 
+export class DetailException extends Error {
+  constructor(public error: ErrorTitle) {
+    super(error.description);
+  }
+}
+
 export type ProblemDetails<TExtensions = object> = {
   title: string;
   status: number;
@@ -60,7 +66,8 @@ export function extractProblemDetails(error: unknown): ProblemDetails | undefine
   }
 }
 
-export function extractError(error: unknown): ErrorTitle {
+export function introspect(error: unknown): ErrorTitle {
+  if (error instanceof DetailException) return error.error;
   const err = extractOptionalError(error);
   if (err) return err;
   return {title: "Error", description: "No se pudo conectar al servidor"};

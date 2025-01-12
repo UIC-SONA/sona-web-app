@@ -1,5 +1,6 @@
 import axios from 'axios';
 import {
+  isAccessToken,
   updateAndLoadAccessToken
 } from "@/services/auth-service.ts";
 
@@ -14,7 +15,7 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     const token = await updateAndLoadAccessToken();
-    if (token) {
+    if (isAccessToken(token)) {
       config.headers.Authorization = `Bearer ${token.access_token}`;
     }
     return config;

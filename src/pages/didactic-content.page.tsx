@@ -44,12 +44,12 @@ export default function DidacticContentPage() {
       {
         header: "Título",
         accessorKey: "title",
-        enableSorting: false,
+        enableSorting: true,
       },
       {
         header: "Descripción",
         accessorKey: "description",
-        enableSorting: false,
+        enableSorting: true,
         cell: ({row}) => {
           return <Truncate text={row.original.content}/>
         }

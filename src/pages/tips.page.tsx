@@ -83,7 +83,7 @@ export default function TipsPage() {
       {
         header: "Activo",
         accessorKey: "active",
-        enableSorting: false,
+        enableSorting: true,
         cell: ({row}) => {
           return <div className="flex items-center justify-center">
             <Checkbox checked={row.original.active} disabled/>

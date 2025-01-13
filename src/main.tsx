@@ -19,37 +19,41 @@ import ProfessionalPage from "@/pages/professional.page.tsx";
 import UserPage from "@/pages/user.page.tsx";
 import {AppointmentPage} from "@/pages/appointment.page.tsx";
 import AppointmentsCalendarPage from "@/pages/appointments-calendar.page.tsx";
-import MessagesPage from "@/pages/messages.page.tsx";
+import ChatPage from "@/pages/chat.page.tsx";
 
 
 createRoot(document.getElementById('root')!).render(
   <ThemeContext defaultTheme="dark" storageKey="sona-ui-theme">
     <AlertDialogProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route element={<AuthGuard/>}>
-              <Route element={<MainLayout/>}>
-                <Route index element={<App/>}/>
-                <Route path="users" element={<UserPage/>}/>
-                <Route path="tips" element={<TipsPage/>}/>
-                <Route path="posts" element={<ForumPage/>}/>
-                <Route path="didactic-content" element={<DidacticContentPage/>}/>
-                <Route path="professional-schedules" element={<ProfessionalSchedulePage/>}/>
-                <Route path="professionals" element={<ProfessionalPage/>}/>
-                <Route path="appointments" element={<AppointmentPage/>}/>
-                <Route path="appointments-calendar" element={<AppointmentsCalendarPage/>}/>
-              </Route>
-              <Route path="messages" element={<MessagesPage/>}/>
-              <Route path="auth" element={<AuthPage/>}>
-                <Route path="login" element={<LoginForm/>}/>
-                <Route path="sign-up" element={<SingUpForm/>}/>
-              </Route>
-            </Route>
-          </Routes>
-        </BrowserRouter>
+        <AppRoute/>
       </AuthProvider>
       <Toaster/>
     </AlertDialogProvider>
   </ThemeContext>
 );
+
+function AppRoute() {
+  return <BrowserRouter>
+    <Routes>
+      <Route element={<AuthGuard/>}>
+        <Route element={<MainLayout/>}>
+          <Route index element={<App/>}/>
+          <Route path="users" element={<UserPage/>}/>
+          <Route path="tips" element={<TipsPage/>}/>
+          <Route path="posts" element={<ForumPage/>}/>
+          <Route path="didactic-content" element={<DidacticContentPage/>}/>
+          <Route path="professional-schedules" element={<ProfessionalSchedulePage/>}/>
+          <Route path="professionals" element={<ProfessionalPage/>}/>
+          <Route path="appointments" element={<AppointmentPage/>}/>
+          <Route path="appointments-calendar" element={<AppointmentsCalendarPage/>}/>
+        </Route>
+        <Route path="chat/:id?" element={<ChatPage/>}/>
+        <Route path="auth" element={<AuthPage/>}>
+          <Route path="login" element={<LoginForm/>}/>
+          <Route path="sign-up" element={<SingUpForm/>}/>
+        </Route>
+      </Route>
+    </Routes>
+  </BrowserRouter>
+}

@@ -44,7 +44,7 @@ export function NavUser({user}: Readonly<NavUserProps>) {
   const [profileImage, setProfileImage] = useState<string | null>(null)
 
   useEffect(() => {
-    userService.getProfilePicture()
+    userService.profilePicture()
       .then(setProfileImage)
       .catch(() => setProfileImage(null))
   }, [user.id])
@@ -87,14 +87,18 @@ export function NavUser({user}: Readonly<NavUserProps>) {
               <BadgeCheck/>
               Perfil
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Bell/>
-              <Link to="/notifications">Notificaciones</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <MessageSquare/>
-              <Link to="/messages">Mensajes</Link>
-            </DropdownMenuItem>
+            <Link to="/notifications">
+              <DropdownMenuItem>
+                <Bell/>
+                Notificaciones
+              </DropdownMenuItem>
+            </Link>
+            <Link to="/chat">
+              <DropdownMenuItem>
+                <MessageSquare/>
+                Mensajes
+              </DropdownMenuItem>
+            </Link>
           </DropdownMenuGroup>
           <DropdownMenuSeparator/>
           <DropdownMenuItem onClick={logoutHandler}>
@@ -116,7 +120,9 @@ function ProfileInfo({profilePicture, user}: Readonly<ProfileInfoProps>) {
   return <>
     <Avatar className="h-8 w-8 rounded-lg">
       <AvatarImage src={profilePicture ?? ''} alt={user.firstName}/>
-      <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+      <AvatarFallback className="rounded-lg">
+        {user.firstName[0]}
+      </AvatarFallback>
     </Avatar>
     <div className="grid flex-1 text-left text-sm leading-tight">
       <span className="truncate font-semibold">{user.firstName}</span>

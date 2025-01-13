@@ -28,6 +28,10 @@ import {
 import CrudTable, {FormFactory, TableFactory} from "@/components/crud/crud-table.tsx";
 import {CrudSchema} from "@/components/crud/crud-common.ts";
 import {useAuth} from "@/context/auth-context.tsx";
+import {ShieldCheck, ShieldMinus} from "lucide-react";
+import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
+import {introspect} from "@/lib/errors.ts";
+import {Checkbox} from "@/components/ui/checkbox.tsx";
 
 
 export interface UserBasePageProps {
@@ -46,6 +50,8 @@ export default function UserBasePage(
 
   const {authenticated} = useAuth();
   if (!authenticated) return null;
+
+  const {pushAlertDialog} = useAlertDialog();
 
   const table: TableFactory<User, number, UserFilter> = {
     columns: [
@@ -82,7 +88,42 @@ export default function UserBasePage(
           return <ItemsOnRounded items={row.original.authorities} mapper={userService.getAuthorityName}/>
         },
       },
-    ]
+      {
+        header: "Habilitado",
+        accessorKey: "enabled",
+        enableSorting: true,
+        cell: ({row}) => {
+          return <div className="flex items-center justify-center">
+            <Checkbox checked={row.original.enabled} disabled/>
+          </div>
+        },
+      }
+    ],
+    entityActions: (user, reload) => {
+      const toggleEnableUser = async () => {
+        await userService.enable(user.id, !user.enabled);
+        reload();
+      }
+
+      return [
+        {
+          label: user.enabled ? "Deshabilitar" : "Habilitar",
+          icon: user.enabled ? ShieldMinus : ShieldCheck,
+          onClick: () => pushAlertDialog({
+            type: "question",
+            title: user.enabled ? "Deshabilitar Usuario" : "Habilitar Usuario",
+            description: `¿Estás seguro de ${user.enabled ? "deshabilitar" : "habilitar"} al usuario ${user.username}?`,
+            onConfirm: toggleEnableUser,
+            onError: (error) => {
+              pushAlertDialog({
+                type: "error",
+                ...introspect(error),
+              });
+            }
+          })
+        }
+      ]
+    }
   }
 
   const form: FormFactory<User, UserDto, number> = {
@@ -131,7 +172,7 @@ export default function UserBasePage(
     FormComponent: (props) => <FormComponent {...props} authorities={authorities}/>,
   };
 
-  const operations = {...userService};
+  const {delete: _, ...operations} = {...userService};
   if (authorities) {
     operations.page = (query) => userService.page({...query, filters: {authorities}});
   }

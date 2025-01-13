@@ -50,7 +50,7 @@ export default function ForumPage() {
         },
       },
       {
-        header: "Reportes",
+        header: "Denuncias",
         accessorKey: "reportedBy",
         enableSorting: true,
         cell: ({row}) => {

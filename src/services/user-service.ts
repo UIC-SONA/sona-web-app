@@ -31,6 +31,7 @@ export interface User extends Entity<number> {
   username: string;
   firstName: string;
   lastName: string;
+  enabled: boolean;
   email: string;
   authorities: Authority[];
 }
@@ -56,7 +57,7 @@ async function singUp(signUp: SingUp): Promise<Message> {
   return response.data;
 }
 
-async function getProfilePicture(): Promise<string> {
+async function profilePicture(): Promise<string> {
   const response = await apiClient.get<string>(
     `${resource}/profile-picture`,
     {
@@ -66,6 +67,10 @@ async function getProfilePicture(): Promise<string> {
   const contentType = response.headers['content-type']; // Obtener el tipo de contenido
   const base64 = Buffer.from(response.data, 'binary').toString('base64');
   return `data:${contentType};base64,${base64}`;
+}
+
+function profilePicturePath(userId: number): string {
+  return apiClient.defaults.baseURL + `${resource}/${userId}/profile-picture`;
 }
 
 async function saveProfilePicture(file: File): Promise<Message> {
@@ -101,6 +106,34 @@ async function profile(): Promise<User> {
   return response.data;
 }
 
+async function enable(id: number, enabled: boolean): Promise<Message> {
+  const response = await apiClient.put<Message>(
+    `${resource}/enable`,
+    null,
+    {
+      params: {
+        id,
+        value: enabled,
+      },
+    }
+  );
+
+  return response.data;
+}
+
+async function mapUsers(ids: number[]): Promise<{ [key: number]: User }> {
+  const response = await apiClient.get<{ [key: number]: User }>(
+    `${resource}/map`,
+    {
+      params: {
+        ids: ids.join(','),
+      },
+    }
+  );
+
+  return response.data;
+}
+
 function getAuthorityName(authority: Authority): string {
   switch (authority) {
     case Authority.ADMIN:
@@ -122,9 +155,12 @@ const crudOperations = restCrud<User, UserDto, number, UserFilter>(apiClient, re
 export const userService = {
   ...crudOperations,
   profile,
-  getProfilePicture,
+  profilePicture,
+  profilePicturePath,
   saveProfilePicture,
   deleteProfilePicture,
   singUp,
   getAuthorityName,
+  enable,
+  mapUsers,
 };

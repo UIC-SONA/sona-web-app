@@ -50,6 +50,7 @@ export type AlertDialogConfigurer<Type extends DialogType> = {
   type: Type;
   title: ReactNode;
   description: ReactNode;
+  onError?: (error: unknown) => void;
 } & DialogTypeArgs[Type];
 
 function isDialogTypeConfig<Type extends DialogType>(
@@ -71,12 +72,31 @@ export interface AlertDialogContextType {
   popAlertDialog: (id: string) => void;
 }
 
+function isAsyncCallback(fn: DialogCallback): fn is AsyncVoidFunction {
+  return fn.constructor.name === 'AsyncFunction';
+}
+
 const executeCallback = async (callback: DialogCallback) => {
-  const result = callback();
-  if (result instanceof Promise) {
-    await result;
+  if (isAsyncCallback(callback)) {
+    await callback();
+  } else {
+    callback();
   }
 };
+
+const resolveCallback = (dialog: DialogState, action: ActionType): DialogCallback | undefined => {
+  if (action === 'confirm' && dialog.onConfirm) {
+    return dialog.onConfirm;
+  }
+
+  if (action === 'cancel' && isDialogTypeConfig(dialog, "question") && dialog.onCancel) {
+    return dialog.onCancel;
+  }
+
+  if (action === 'retry' && isDialogTypeConfig(dialog, "error") && dialog.retry) {
+    return dialog.retry;
+  }
+}
 
 type DialogState<T extends DialogType = DialogType> = {
   id: string;
@@ -90,7 +110,6 @@ export const AlertDialogProvider = ({children}: Readonly<PropsWithChildren>) => 
   const [dialogs, setDialogs] = useState<DialogState[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState[]>([]);
 
-  // Tiempo de la animación en ms (debe coincidir con la duración de la animación en tu CSS)
   const ANIMATION_DURATION = 200;
 
   const pushAlertDialog = useCallback(<Type extends DialogType>(config: AlertDialogConfigurer<Type>) => {
@@ -125,27 +144,36 @@ export const AlertDialogProvider = ({children}: Readonly<PropsWithChildren>) => 
   }, [loadingState]);
 
   const handleAction = useCallback(async (dialog: DialogState, action: ActionType) => {
+
+    const callback = resolveCallback(dialog, action);
+
+    if (!callback) {
+      popAlertDialog(dialog.id);
+      return;
+    }
+
+    const isAsync = isAsyncCallback(callback);
+
     try {
-      setLoadingState(prev => [...prev, {dialogId: dialog.id, action}]);
 
-      if (action === 'confirm' && dialog.onConfirm) {
-        await executeCallback(dialog.onConfirm);
+      if (isAsync) {
+        setLoadingState(prev => [...prev, {dialogId: dialog.id, action}]);
       }
 
-      if (action === 'cancel' && isDialogTypeConfig(dialog, "question") && dialog.onCancel) {
-        await executeCallback(dialog.onCancel);
-      }
-
-      if (action === 'retry' && isDialogTypeConfig(dialog, "error") && dialog.retry) {
-        await executeCallback(dialog.retry);
-      }
+      await executeCallback(callback);
 
       popAlertDialog(dialog.id);
+
     } catch (error) {
+
       console.error('Error executing dialog action:', error);
-      setLoadingState(prev =>
-        prev.filter(state => !(state.dialogId === dialog.id && state.action === action))
-      );
+
+      dialog.onError?.(error);
+
+      if (isAsync) {
+        setLoadingState(prev => prev.filter(state => !(state.dialogId === dialog.id && state.action === action)));
+      }
+
     }
   }, [popAlertDialog]);
 
@@ -172,11 +200,8 @@ export const AlertDialogProvider = ({children}: Readonly<PropsWithChildren>) => 
                   onClick={() => handleAction(dialog, 'cancel')}
                   disabled={thisDialogLoading}
                 >
-                  {isLoading(dialog.id, 'cancel') ? (
-                    <Loader2 className="animate-spin mr-2"/>
-                  ) : (
-                    'Cancelar'
-                  )}
+                  {isLoading(dialog.id, 'cancel') && <Loader2 className="animate-spin mr-2"/>}
+                  Cancelar
                 </AlertDialogCancel>
               )}
               {isDialogTypeConfig(dialog, "error") && dialog.retry && (
@@ -184,9 +209,7 @@ export const AlertDialogProvider = ({children}: Readonly<PropsWithChildren>) => 
                   onClick={() => handleAction(dialog, 'retry')}
                   disabled={thisDialogLoading}
                 >
-                  {isLoading(dialog.id, 'retry') && (
-                    <Loader2 className="animate-spin mr-2"/>
-                  )}
+                  {isLoading(dialog.id, 'retry') && <Loader2 className="animate-spin mr-2"/>}
                   Reintentar
                 </AlertDialogAction>
               )}
@@ -194,9 +217,7 @@ export const AlertDialogProvider = ({children}: Readonly<PropsWithChildren>) => 
                 onClick={() => handleAction(dialog, 'confirm')}
                 disabled={thisDialogLoading}
               >
-                {isLoading(dialog.id, 'confirm') && (
-                  <Loader2 className="animate-spin mr-2"/>
-                )}
+                {isLoading(dialog.id, 'confirm') && <Loader2 className="animate-spin mr-2"/>}
                 {dialog.type === "question" ? 'Aceptar' : 'Ok'}
               </AlertDialogAction>
             </AlertDialogFooter>

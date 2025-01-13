@@ -1,7 +1,6 @@
 import axios from 'axios';
 import {jwtDecode, JwtPayload} from "jwt-decode";
 
-
 const TOKEN_END_POINT = import.meta.env.VITE_TOKEN_ENDPOINT as string;
 const INTROSPECTION_ENDPOINT = import.meta.env.VITE_INTROSPECTION_ENDPOINT as string;
 const USER_INFO_ENDPOINT = import.meta.env.VITE_USERINFO_ENDPOINT as string;

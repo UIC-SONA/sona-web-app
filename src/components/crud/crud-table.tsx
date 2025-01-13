@@ -41,7 +41,7 @@ import {
   EditIcon,
   EllipsisVerticalIcon,
   EyeIcon,
-  LoaderCircle,
+  LoaderCircle, LucideIcon,
   PlusIcon,
   SearchIcon,
   TrashIcon,
@@ -102,6 +102,7 @@ export interface FormFactory<TData extends Entity<ID>, Dto, ID> {
 export interface TableFactory<TData extends Entity<ID>, ID, E = {}> {
   columns: ColumnDef<TData>[];
   FilterComponent?: ComponentType<FilterComponentProps<E>>;
+  entityActions?: (data: TData, reload: () => void) => EntityAction[];
 }
 
 export type CrudTableProps<TData extends Entity<ID>, Dto, ID, E = {}> = {
@@ -151,7 +152,8 @@ export function CrudOperationsTable<
     title,
     table: {
       columns,
-      FilterComponent
+      FilterComponent,
+      entityActions
     },
     form,
     page,
@@ -264,7 +266,10 @@ export function CrudOperationsTable<
     return () => clearTimeout(handler);
   }, [search]);
 
-  const useFormInTable = deleteFn != undefined || (update != undefined && form?.update != undefined);
+  const useFormInTable =
+    deleteFn != undefined
+    || (update != undefined && form?.update != undefined)
+    || (entityActions != undefined);
 
   const table = useReactTable({
     data,
@@ -436,6 +441,7 @@ export function CrudOperationsTable<
                       reload={reload}
                       delete={deleteFn}
                       update={update}
+                      entityActions={entityActions}
                   />}
                 </TableRow>
               })
@@ -580,12 +586,19 @@ function DropdownVisibleColumns<TData>({table, className}: Readonly<DropdownVisi
   </div>
 }
 
+interface EntityAction {
+  label: string,
+  icon: LucideIcon,
+  onClick: () => void
+}
+
 interface EntityActionsProps<TData extends Entity<ID>, Dto, ID> {
   entity: TData,
   form?: FormFactory<TData, Dto, ID>,
   reload: () => void,
   delete?: (id: ID) => Promise<void>,
-  update?: (id: ID, data: Dto) => Promise<TData>,
+  update?: (id: ID, dto: Dto) => Promise<TData>,
+  entityActions?: (data: TData, reload: () => void) => EntityAction[],
 }
 
 function EntityActions<TData extends Entity<ID>, Dto, ID>(
@@ -594,7 +607,8 @@ function EntityActions<TData extends Entity<ID>, Dto, ID>(
     form,
     reload,
     delete: deleteFn,
-    update
+    update,
+    entityActions
   }: Readonly<EntityActionsProps<TData, Dto, ID>>) {
 
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
@@ -610,6 +624,8 @@ function EntityActions<TData extends Entity<ID>, Dto, ID>(
     setDropdownOpen(false);
     setIsDeleteOpen(true)
   };
+
+  const actions = entityActions?.(entity, reload) ?? [];
 
   return (
     <>
@@ -657,6 +673,12 @@ function EntityActions<TData extends Entity<ID>, Dto, ID>(
               Eliminar
             </DropdownMenuItem>
           )}
+          {actions.map((action) => (
+            <DropdownMenuItem key={action.label} onSelect={action.onClick}>
+              <action.icon/>
+              {action.label}
+            </DropdownMenuItem>
+          ))}
         </DropdownMenuContent>
       </DropdownMenu>
     </>

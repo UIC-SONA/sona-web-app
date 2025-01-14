@@ -1,7 +1,4 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
-
-name: Node.js CI
+name: CI SONA WEB App
 
 on:
   push:
@@ -10,22 +7,72 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-
+  build-and-deploy:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x, 22.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
     steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - run: npm ci
-    - run: npm run build --if-present
-    - run: npm test
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      #      - name: Create env file
+      #        run: |
+      #          echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: Send build files to remote server
+        if: success()
+        env:
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+          REMOTE_USER: ${{ secrets.REMOTE_USER }}
+          REMOTE_PATH: ${{ secrets.REMOTE_PATH }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H $REMOTE_HOST >> ~/.ssh/known_hosts
+
+          # Crear directorio web en el servidor remoto
+          ssh -i ~/.ssh/deploy_key $REMOTE_USER@$REMOTE_HOST "mkdir -p $REMOTE_PATH"
+
+          # Copiar los archivos de build al servidor remoto
+          if scp -i ~/.ssh/deploy_key -r dist/* $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH; then
+            echo "Files successfully copied"
+          else
+            echo "Failed to copy files" && exit 1
+          fi
+
+      - name: Deploy to remote server
+        uses: appleboy/ssh-action@v1.1.0
+        env:
+          REMOTE_PATH: ${{ secrets.REMOTE_PATH }}
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script_stop: true
+          envs: REMOTE_PATH
+          script: |
+            cd $REMOTE_PATH
+            
+            # Si estás usando Docker para servir el frontend
+            docker compose down
+            docker compose build --no-cache
+            docker compose up -d
+            
+            # Limpiar imágenes no usadas
+            docker image prune -f
+            
+            echo "--------------------------------------------------"
+            echo "      Frontend Deployment completed successfully :3"
+            echo "--------------------------------------------------"

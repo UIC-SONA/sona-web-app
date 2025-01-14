@@ -100,6 +100,10 @@ const getFormattedTime = (date: Date) => {
   let minutesAgo = Math.floor((now.getTime() - date.getTime()) / 1000 / 60);
   minutesAgo = minutesAgo < 0 ? 0 : minutesAgo;
 
+  if (minutesAgo == 0) {
+    return "Enviado recientemente";
+  }
+
   if (minutesAgo < 60) {
     return `hace ${minutesAgo} ${minutesAgo === 1 ? 'minuto' : 'minutos'}`;
   }

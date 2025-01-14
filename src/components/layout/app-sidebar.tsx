@@ -4,7 +4,7 @@ import {
   BookOpen,
   Calendar,
   LoaderCircle,
-  Settings2, ThumbsUp,
+  ThumbsUp,
   UserIcon,
 } from "lucide-react"
 
@@ -79,17 +79,6 @@ const navItems: NavItem[] = [
         title: "Calendario",
         url: "/appointments-calendar",
       }
-    ],
-  },
-  {
-    title: "Configuración",
-    url: "#",
-    icon: Settings2,
-    items: [
-      {
-        title: "General",
-        url: "#",
-      },
     ],
   },
 ];

@@ -50,11 +50,11 @@ export default function ChatListLayout({messages, participans, isMe}: Readonly<C
             key={"Chat-" + index}
             variant={variant}
           >
-            <ChatBubbleAvatar
-              className="font-bold"
-              src={userService.profilePicturePath(message.sentBy.id)}
-              fallback={message.sentBy.firstName[0].toUpperCase() || "D"}
-            />
+            {message.sentBy.hasProfilePicture && <ChatBubbleAvatar
+                className="font-bold"
+                src={userService.profilePicturePath(message.sentBy.id)}
+                fallback={message.sentBy.firstName[0].toUpperCase() || "D"}
+            />}
 
             <ChatBubbleMessage
               variant={variant}

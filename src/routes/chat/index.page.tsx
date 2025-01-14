@@ -10,15 +10,16 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarRail, useSidebar,
+  SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar.tsx";
 import {
   Link,
   useParams
 } from "react-router";
 import {
-  ArrowBigLeft,
-  LoaderCircle,
+  ArrowBigLeft, ArrowBigRight,
+  LoaderCircle, Menu,
   MessageCircleMore,
   MessageSquare,
   SendHorizonal
@@ -57,6 +58,7 @@ import {cn} from "@/lib/utils.ts";
 import {ExpandableChatHeader} from "@/components/chat/expandable-chat.tsx";
 import {ChatInput} from "@/components/chat/chat-input.tsx";
 import {useIsMobile} from "@/hooks/use-mobile.ts";
+import {Skeleton} from "@/components/ui/skeleton.tsx";
 
 const stompUri = import.meta.env.VITE_STOMP_URI as string;
 
@@ -70,6 +72,10 @@ export default function ChatPage() {
     return null;
   }
 
+  useEffect(() => {
+    document.body.style.pointerEvents = "";
+  }, []);
+
 
   return <StompProvider url={stompUri}>
     <ChatProvider user={user}>
@@ -79,6 +85,7 @@ export default function ChatPage() {
           user={user}
         />
         <SidebarInset className="overflow-hidden">
+          <ChatSidebarTrigger/>
           <div className="absolute top-4 right-4 z-40">
             <ThemeToggle/>
           </div>
@@ -95,6 +102,32 @@ export default function ChatPage() {
     </ChatProvider>
   </StompProvider>
 
+}
+
+function ChatSidebarTrigger() {
+  const {toggleSidebar, open} = useSidebar();
+  const isMobile = useIsMobile();
+
+  return <div className="absolute top-[50%] left-0 transform -translate-y-1/2 z-40">
+    {isMobile
+      ? <Button
+        variant="outline"
+        size="icon"
+        onClick={toggleSidebar}
+      >
+        <Menu/>
+      </Button>
+
+      : <Button
+        variant="outline"
+        size="icon"
+        onClick={toggleSidebar}
+        className="rounded-r-full border-l-0"
+      >
+        {open ? <ArrowBigLeft/> : <ArrowBigRight/>}
+      </Button>
+    }
+  </div>
 }
 
 function ChatContent({roomId, user}: Readonly<{ roomId: string, user?: User }>) {
@@ -213,9 +246,8 @@ function ChatSidebarContent({roomId, user}: Readonly<{ roomId?: string, user: Us
         Conversaciones
       </SidebarGroupLabel>
       <SidebarMenu>
-        {loadingChat && <div className="flex items-center justify-center h-32 flex-col">
-            <LoaderCircle className="w-8 h-8 animate-spin"/>
-            <p>Cargando...</p>
+        {loadingChat && <div>
+          {[...Array(10).keys()].map((i) => <ChatRoomSckeleton key={i}/>)}
         </div>}
         {rooms.map((room) => {
 
@@ -253,6 +285,7 @@ function ChatSidebarContent({roomId, user}: Readonly<{ roomId?: string, user: Us
   </SidebarContent>;
 }
 
+
 interface ChatInfo {
   roomName: string
   avatar?: string
@@ -273,7 +306,7 @@ function resolveChatInfo(room: Room, user?: User): ChatInfo {
 
     return {
       roomName: participant.firstName + " " + participant.lastName,
-      avatar: userService.profilePicturePath(participant.id),
+      avatar: participant.hasProfilePicture ? userService.profilePicturePath(participant.id) : undefined,
       fallback: participant.firstName[0] || "D"
     }
   }
@@ -307,3 +340,21 @@ function ChatPreviewMenu({room}: Readonly<ChatMessageListProps>) {
     </div>
   </>
 }
+
+function ChatRoomSckeleton() {
+  return <SidebarMenuItem>
+    <SidebarMenuButton
+      size="lg"
+      className={cn("data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground")}
+    >
+      <div className="flex items-center space-x-4">
+        <Skeleton className="h-8 w-8 rounded-full"/>
+        <div className="space-y-2">
+          <Skeleton className="h-2 w-[150px]"/>
+          <Skeleton className="h-2 w-[150px]"/>
+        </div>
+      </div>
+    </SidebarMenuButton>
+  </SidebarMenuItem>
+}
+

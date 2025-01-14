@@ -34,6 +34,7 @@ export interface User extends Entity<number> {
   enabled: boolean;
   email: string;
   authorities: Authority[];
+  hasProfilePicture: boolean;
 }
 
 export interface UserDto extends BaseUser {

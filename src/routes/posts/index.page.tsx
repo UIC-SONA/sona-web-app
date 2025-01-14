@@ -10,6 +10,7 @@ import {
   Truncate
 } from "@/components/utils-componentes.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
+import {format} from "date-fns";
 
 
 export default function ForumPage() {
@@ -31,14 +32,16 @@ export default function ForumPage() {
         accessorKey: "content",
         enableSorting: true,
         cell: ({row}) => {
-          return <Truncate text={row.original.content}/>
+          return <Truncate text={row.original.content} length={100}/>
         }
       },
       {
         header: "Publicado",
         accessorKey: "createdAt",
         cell: ({row}) => {
-          return row.original.createdAt.toLocaleString();
+          return <div className="flex items-center justify-center">
+            {format(row.original.createdAt, "dd/MM/yyyy HH:mm")}
+          </div>;
         }
       },
       {
@@ -46,7 +49,9 @@ export default function ForumPage() {
         accessorKey: "likedBy",
         enableSorting: true,
         cell: ({row}) => {
-          return row.original.likedBy.length;
+          return <div className="flex items-center justify-center">
+            {row.original.likedBy.length}
+          </div>
         },
       },
       {
@@ -54,7 +59,9 @@ export default function ForumPage() {
         accessorKey: "reportedBy",
         enableSorting: true,
         cell: ({row}) => {
-          return row.original.reportedBy.length;
+          return <div className="flex items-center justify-center">
+            {row.original.reportedBy.length}
+          </div>
         },
       },
     ]

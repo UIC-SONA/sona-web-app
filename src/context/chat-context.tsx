@@ -107,7 +107,7 @@ export function ChatProvider({children, user}: Readonly<PropsWithChildren & { us
       } as Room;
     });
 
-    const rooms: Room[] = await Promise.all(promises);
+    const rooms: Room[] = (await Promise.all(promises)).sort((a, b) => b.lastMessage.createdAt.getTime() - a.lastMessage.createdAt.getTime());
 
     setUsers(users);
     setRooms(rooms);
@@ -163,6 +163,7 @@ export function ChatProvider({children, user}: Readonly<PropsWithChildren & { us
           current: prev[roomId]?.current - 1, // Decrementar chunk actual
         },
       }));
+
     } catch (error) {
       console.error(`Error al cargar mensajes para la sala ${roomId}:`, error);
     } finally {

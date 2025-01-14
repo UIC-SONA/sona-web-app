@@ -455,9 +455,13 @@ export function CrudOperationsTable<
           </TableBody>
         </TableComponent>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
+      <div className="flex items-center justify-between mt-4">
+        <span className="text-sm text-muted-foreground">
+          Total de registros: <b>{paginationInfo.totalElements}</b>
+        </span>
+
         {table.getPageCount() > 0 &&
-            <>
+            <div className="space-x-2">
                 <span className="text-sm text-muted-foreground">
                     Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
                 </span>
@@ -483,7 +487,7 @@ export function CrudOperationsTable<
                     : <ChevronRight/>
                   }
                 </Button>
-            </>}
+            </div>}
       </div>
     </div>);
 }

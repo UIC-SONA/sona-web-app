@@ -43,10 +43,10 @@ jobs:
           ssh-keyscan -H $REMOTE_HOST >> ~/.ssh/known_hosts
 
           # Crear directorio web en el servidor remoto
-          ssh -i ~/.ssh/deploy_key $REMOTE_USER@$REMOTE_HOST "mkdir -p $REMOTE_PATH"
+          ssh -i ~/.ssh/deploy_key $REMOTE_USER@$REMOTE_HOST "mkdir -p $REMOTE_PATH $REMOTE_PATH/dist"
 
           # Copiar los archivos de build al servidor remoto
-          if scp -i ~/.ssh/deploy_key -r dist/* $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH; then
+          if scp -i ~/.ssh/deploy_key -r dist/* $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH/dist; then
             echo "Files successfully copied"
           else
             echo "Failed to copy files" && exit 1

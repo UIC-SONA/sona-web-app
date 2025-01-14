@@ -1,9 +1,7 @@
 import BreadcrumbSubLayout from "@/layout/breadcrumb-sub-layout.tsx";
 
 
-function App() {
-
-
+export default function App() {
   return (
     <BreadcrumbSubLayout items={[]}>
       <h1>App</h1>
@@ -11,4 +9,3 @@ function App() {
   );
 }
 
-export default App;

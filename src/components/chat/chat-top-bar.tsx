@@ -3,7 +3,9 @@ import {
   AvatarFallback,
   AvatarImage
 } from "@/components/ui/avatar.tsx";
-import {useSidebar} from "@/components/ui/sidebar.tsx";
+import {
+  useSidebar
+} from "@/components/ui/sidebar.tsx";
 
 
 export interface ChatTopBarProps {

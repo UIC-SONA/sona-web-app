@@ -25,7 +25,7 @@ import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
 import {userService} from "@/services/user-service.ts";
 
 
-export default function SingUpForm() {
+export default function SingUp() {
 
   const {pushAlertDialog} = useAlertDialog();
 

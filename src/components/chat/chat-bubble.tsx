@@ -7,7 +7,7 @@ import {
   AvatarFallback
 } from "@/components/ui/avatar";
 import MessageLoading from "./message-loading";
-import {Button, ButtonProps} from "../button";
+import {Button, ButtonProps} from "@/components/ui/button";
 
 // ChatBubble
 const chatBubbleVariant = cva(
@@ -65,11 +65,12 @@ interface ChatBubbleAvatarProps {
   className?: string;
 }
 
-const ChatBubbleAvatar: React.FC<ChatBubbleAvatarProps> = ({
-                                                             src,
-                                                             fallback,
-                                                             className,
-                                                           }) => (
+const ChatBubbleAvatar: React.FC<ChatBubbleAvatarProps> = (
+  {
+    src,
+    fallback,
+    className,
+  }) => (
   <Avatar className={className}>
     <AvatarImage src={src} alt="Avatar"/>
     <AvatarFallback>{fallback}</AvatarFallback>
@@ -135,11 +136,12 @@ interface ChatBubbleTimestampProps
   timestamp: string;
 }
 
-const ChatBubbleTimestamp: React.FC<ChatBubbleTimestampProps> = ({
-                                                                   timestamp,
-                                                                   className,
-                                                                   ...props
-                                                                 }) => (
+const ChatBubbleTimestamp: React.FC<ChatBubbleTimestampProps> = (
+  {
+    timestamp,
+    className,
+    ...props
+  }) => (
   <div className={cn("text-xs  text-right", className)} {...props}>
     {timestamp}
   </div>
@@ -150,14 +152,15 @@ type ChatBubbleActionProps = ButtonProps & {
   icon: React.ReactNode;
 };
 
-const ChatBubbleAction: React.FC<ChatBubbleActionProps> = ({
-                                                             icon,
-                                                             onClick,
-                                                             className,
-                                                             variant = "ghost",
-                                                             size = "icon",
-                                                             ...props
-                                                           }) => (
+const ChatBubbleAction: React.FC<ChatBubbleActionProps> = (
+  {
+    icon,
+    onClick,
+    className,
+    variant = "ghost",
+    size = "icon",
+    ...props
+  }) => (
   <Button
     variant={variant}
     size={size}

@@ -41,13 +41,14 @@ function dtoTranformer(dto: DidaticContentDto): FormData {
   return formData;
 }
 
+
+const commonHeaders = {
+  'Content-Type': 'multipart/form-data',
+};
+
 const headers: CrudHeadersConfig = {
-  creatable: {
-    'Content-Type': 'multipart/form-data',
-  },
-  updatable: {
-    'Content-Type': 'multipart/form-data',
-  },
+  creatable: commonHeaders,
+  updatable: commonHeaders,
 };
 
 
@@ -65,3 +66,4 @@ export const didacticContentService = {
   ...crudOperations,
   getImage,
 };
+

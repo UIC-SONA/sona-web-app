@@ -23,7 +23,6 @@ import {
   MessageSquare,
   SendHorizonal
 } from "lucide-react";
-import {ChatInput} from "@/components/ui/chat/chat-input.tsx";
 import {
   ChatProvider,
   Room,
@@ -48,12 +47,16 @@ import {
 import {ThemeToggle} from "@/components/theme-toggle.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import ChatTopBar from "@/components/chat/chat-top-bar.tsx";
-import ChatList from "@/components/chat/chat-list.tsx";
-import {ExpandableChatHeader} from "@/components/ui/chat/expandable-chat.tsx";
+import ChatListLayout from "@/components/chat/chat-list-layout.tsx";
 import {StompProvider} from "@/context/stomp-context.tsx";
-import {useEffect, useState} from "react";
+import {
+  useEffect,
+  useState
+} from "react";
 import {cn} from "@/lib/utils.ts";
-import {useIsMobile} from "@/hooks/use-mobile.tsx";
+import {ExpandableChatHeader} from "@/components/chat/expandable-chat.tsx";
+import {ChatInput} from "@/components/chat/chat-input.tsx";
+import {useIsMobile} from "@/hooks/use-mobile.ts";
 
 const stompUri = import.meta.env.VITE_STOMP_URI as string;
 
@@ -125,7 +128,7 @@ function ChatContent({roomId, user}: Readonly<{ roomId: string, user?: User }>) 
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <ChatList
+        <ChatListLayout
           participans={room.participants}
           messages={messages}
           isMe={(senderId) => senderId === user?.id}

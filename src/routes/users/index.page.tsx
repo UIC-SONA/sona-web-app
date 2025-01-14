@@ -1,7 +1,7 @@
-import UserBasePage from "@/pages/user-base.page.tsx";
+import UserBasePage from "./user-base.page.tsx";
 
 
-export default function UserPage () {
+export default function UserPage() {
   return (
     <UserBasePage
       breadcrumbs={["Usuarios"]}

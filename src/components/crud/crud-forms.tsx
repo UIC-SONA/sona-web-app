@@ -181,6 +181,7 @@ function CommonForm<TData, Dto>(
         className="max-w-[80vw] max-h-[80vh] overflow-y-auto"
         onInteractOutside={(e) => e.preventDefault()}
       >
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} autoComplete="off">
             <RequestErrorFormAlertDialog
@@ -195,7 +196,9 @@ function CommonForm<TData, Dto>(
                 {description}
               </DialogDescription>
             </DialogHeader>
+
             <FormComponent form={form} entity={entity}/>
+            
             <DialogFooter className="justify-end mt-4">
               <DialogClose asChild>
                 <Button
@@ -213,6 +216,7 @@ function CommonForm<TData, Dto>(
             </DialogFooter>
           </form>
         </Form>
+
       </DialogContent>
     </Dialog>
   );

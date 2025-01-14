@@ -36,6 +36,8 @@ export interface AppointmentsRange {
   to: Date;
 }
 
+
+
 async function getAppointmentsRangesByProfessional(professionalId: number, from: Date, to: Date): Promise<AppointmentsRange[]> {
   const response = await apiClient.get<AppointmentsRange[]>(
     `${resource}/professional/${professionalId}/ranges`,

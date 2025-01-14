@@ -6,14 +6,18 @@ import {
   User,
   userService
 } from "@/services/user-service.ts";
-import {ChatMessageList} from "@/components/ui/chat/chat-message-list.tsx";
-import {AnimatePresence} from "framer-motion";
+import {
+  ChatMessageList
+} from "@/components/chat/chat-message-list.tsx";
+import {
+  AnimatePresence
+} from "framer-motion";
 import {
   ChatBubble,
   ChatBubbleAvatar,
   ChatBubbleMessage,
   ChatBubbleTimestamp
-} from "@/components/ui/chat/chat-bubble.tsx";
+} from "@/components/chat/chat-bubble.tsx";
 import {
   format,
   isToday,
@@ -32,9 +36,7 @@ interface ChatListProps {
   isMe: (senderId: number) => boolean;
 }
 
-export default function ChatList({messages, participans, isMe}: Readonly<ChatListProps>) {
-
-
+export default function ChatListLayout({messages, participans, isMe}: Readonly<ChatListProps>) {
   return <div className="w-full overflow-y-hidden h-full flex flex-col">
     <ChatMessageList>
       <AnimatePresence>

@@ -23,7 +23,7 @@ import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
 
 
-export default function LoginForm() {
+export default function LogIn() {
 
   const navigate = useNavigate();
   const {loginUser} = useAuth();

@@ -1,5 +1,5 @@
-import UserBasePage from "@/pages/user-base.page.tsx";
 import {Authority} from "@/services/user-service.ts";
+import UserBasePage from "@/routes/users/user-base.page.tsx";
 
 
 export default function ProfessionalPage() {

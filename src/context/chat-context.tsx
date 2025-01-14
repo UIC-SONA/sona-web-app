@@ -87,7 +87,7 @@ export function ChatProvider({children, user}: Readonly<PropsWithChildren & { us
     const participants = chatRooms.map(room => room.participants).flat();
     const users = await userService.mapUsers(participants);
 
-    const rooms: Room[] = await Promise.all(chatRooms.map(async room => {
+    const promises: Promise<Room>[] = chatRooms.map(async room => {
       const lastMessage = await chatService.lastMessage(room.id);
       const sentBy = users[lastMessage.sentBy];
       const readBy = lastMessage.readBy.map(readBy => ({
@@ -104,8 +104,10 @@ export function ChatProvider({children, user}: Readonly<PropsWithChildren & { us
           readBy,
           status: StatusMessage.DELIVERED
         }
-      };
-    }));
+      } as Room;
+    });
+
+    const rooms: Room[] = await Promise.all(promises);
 
     setUsers(users);
     setRooms(rooms);

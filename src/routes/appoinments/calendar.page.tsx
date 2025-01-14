@@ -13,18 +13,18 @@ import {
   Authority,
   User
 } from "@/services/user-service.ts";
-import FullCalendarController from "@/components/full-calendar/full-calendar-controller.tsx";
+import FullCalendarController from "@/components/calendar/full-calendar-controller.tsx";
 import {
   Card,
   CardContent
 } from "@/components/ui/card.tsx";
-import FullCalendarImproved from "@/components/full-calendar/full-calendar-improved.tsx";
+import FullCalendarImproved from "@/components/calendar/full-calendar-improved.tsx";
 import {es} from "date-fns/locale/es";
 import FullCalendar from "@fullcalendar/react";
 import {
   CaneceledCheckbox,
   SelectAppointmentType
-} from "@/pages/appointment.page.tsx";
+} from "./index.page.tsx";
 import {
   EraserIcon,
   LoaderCircle

@@ -1,5 +1,5 @@
 // @hidden
-import { useCallback, useEffect, useRef, useState } from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 
 interface ScrollState {
   isAtBottom: boolean;
@@ -13,7 +13,9 @@ interface UseAutoScrollOptions {
 }
 
 export function useAutoScroll(options: UseAutoScrollOptions = {}) {
-  const { offset = 20, smooth = false, content } = options;
+
+  const {offset = 20, smooth = false, content} = options;
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastContentHeight = useRef(0);
   const userHasScrolled = useRef(false);
@@ -23,16 +25,13 @@ export function useAutoScroll(options: UseAutoScrollOptions = {}) {
     autoScrollEnabled: true,
   });
 
-  const checkIsAtBottom = useCallback(
-    (element: HTMLElement) => {
-      const { scrollTop, scrollHeight, clientHeight } = element;
-      const distanceToBottom = Math.abs(
-        scrollHeight - scrollTop - clientHeight
-      );
-      return distanceToBottom <= offset;
-    },
-    [offset]
-  );
+  const checkIsAtBottom = useCallback((element: HTMLElement) => {
+    const {scrollTop, scrollHeight, clientHeight} = element;
+    const distanceToBottom = Math.abs(
+      scrollHeight - scrollTop - clientHeight
+    );
+    return distanceToBottom <= offset;
+  }, [offset]);
 
   const scrollToBottom = useCallback(
     (instant?: boolean) => {
@@ -75,7 +74,7 @@ export function useAutoScroll(options: UseAutoScrollOptions = {}) {
     const element = scrollRef.current;
     if (!element) return;
 
-    element.addEventListener("scroll", handleScroll, { passive: true });
+    element.addEventListener("scroll", handleScroll, {passive: true});
     return () => element.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
 

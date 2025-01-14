@@ -10,7 +10,8 @@ import {
   User,
   userService
 } from "@/services/user-service.ts";
-import FullCalendarImproved from "@/components/full-calendar/full-calendar-improved.tsx";
+import FullCalendarImproved from "@/components/calendar/full-calendar-improved.tsx";
+import FullCalendarController from "@/components/calendar/full-calendar-controller.tsx"
 import {
   Dispatch,
   useEffect,
@@ -66,7 +67,6 @@ import {Switch} from "@/components/ui/switch.tsx";
 import {Label} from "@/components/ui/label.tsx";
 import {useTheme} from "@/context/theme-context.tsx";
 import FullCalendar from "@fullcalendar/react";
-import FullCalendarController from "@/components/full-calendar/full-calendar-controller.tsx";
 import {Card} from "@/components/ui/card.tsx";
 import {CalendarDate, today} from "@internationalized/date";
 import DateRangePicker from "@/components/ui/date/date-range-picker.tsx";
@@ -299,7 +299,7 @@ function ScheduleView({schedule, open, setOpen, setDeleteOpen, setUpdateSchedule
             <TrashIcon/>
             Eliminar
           </Button>
-          <Button onClick={() => setUpdateScheduleOpen(true)} >
+          <Button onClick={() => setUpdateScheduleOpen(true)}>
             <EditIcon/>
             Editar
           </Button>

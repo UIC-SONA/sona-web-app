@@ -152,6 +152,7 @@ function getAuthorityName(authority: Authority): string {
 
 const crudOperations = restCrud<User, UserDto, number, UserFilter>(apiClient, resource)
 
+
 export const userService = {
   ...crudOperations,
   profile,

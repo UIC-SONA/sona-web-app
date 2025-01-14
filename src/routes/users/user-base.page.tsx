@@ -216,6 +216,7 @@ function FormComponent({form, entity, authorities}: Readonly<FormUserProps>) {
           control={control}
           name="password"
           render={({field}) => (
+
             <FormItem className="lg:col-span-2">
               <FormLabel>Contraseña</FormLabel>
               <FormControl>
@@ -223,6 +224,7 @@ function FormComponent({form, entity, authorities}: Readonly<FormUserProps>) {
               </FormControl>
               <FormMessage/>
             </FormItem>
+
           )}
         />
       }

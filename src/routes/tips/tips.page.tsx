@@ -116,12 +116,22 @@ export default function TipsPage() {
     },
     create: {
       schema: z.object({
-        title: z.string().nonempty("El título es requerido"),
-        summary: z.string().nonempty("El resumen es requerido"),
-        description: z.string().nonempty("La descripción es requerida"),
-        tags: z.array(z.string()).nonempty("Los tags son requeridos"),
-        active: z.boolean(),
-        image: z.instanceof(File),
+        title: z
+          .string()
+          .nonempty("El título es requerido"),
+        summary: z
+          .string()
+          .nonempty("El resumen es requerido"),
+        description: z
+          .string()
+          .nonempty("La descripción es requerida"),
+        tags: z
+          .array(z.string())
+          .nonempty("Los tags son requeridos"),
+        active: z
+          .boolean(),
+        image: z
+          .instanceof(File),
       }),
       defaultValues: {
         title: "",

@@ -1,92 +1,22 @@
 import * as React from "react"
-import {
-  Blocks,
-  BookOpen,
-  Calendar,
-  LoaderCircle,
-  ThumbsUp,
-  UserIcon,
-} from "lucide-react"
+import {Blocks, BookOpen, Calendar, LoaderCircle, ThumbsUp, UserIcon,} from "lucide-react"
 
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarRail,
-} from "@/components/ui/sidebar"
+import {Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail,} from "@/components/ui/sidebar"
 import onlyLogo from "@/assets/only_logo.png";
 import {Separator} from "@/components/ui/separator.tsx";
 import {Link} from "react-router";
-import {
-  NavItem,
-  NavMain
-} from "@/components/layout/nav-main.tsx";
+import {NavItem, NavMain} from "@/components/layout/nav-main.tsx";
 import {NavUser} from "@/components/layout/nav-user.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
-
-
-const navItems: NavItem[] = [
-  {
-    title: "Usuarios",
-    url: "/users",
-    icon: UserIcon,
-    isActive: true,
-  },
-  {
-    title: "Tips",
-    url: "/tips",
-    icon: BookOpen,
-  },
-  {
-    title: "Posts",
-    url: "/posts",
-    icon: ThumbsUp,
-  },
-  {
-    title: "Contenido didáctico",
-    url: "/didactic-content",
-    icon: Blocks,
-  },
-  {
-    title: "Profesionales",
-    url: "#",
-    icon: UserIcon,
-    items: [
-      {
-        title: "Gestion",
-        url: "/professionals",
-      },
-      {
-        title: "Horarios de atención",
-        url: "/professional-schedules",
-      },
-    ],
-  },
-  {
-    title: "Citas",
-    url: "#",
-    icon: Calendar,
-    items: [
-      {
-        title: "Gestion",
-        url: "/appointments",
-      },
-      {
-        title: "Calendario",
-        url: "/appointments-calendar",
-      }
-    ],
-  },
-];
+import {Authority, User} from "@/services/user-service.ts";
 
 
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
 
   const {user} = useAuth();
+
+
+  const navItems = resolvedNavItems(user);
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -119,11 +49,79 @@ export function SonaSideBarHeader() {
             <span className="truncate font-semibold">
               SONA
             </span>
-              <span className="truncate text-xs">Bienvenido usuario</span>
+              <span className="truncate text-xs">Bienvenido a <b>SONA</b></span>
             </div>
           </SidebarMenuButton>
         </Link>
       </SidebarMenuItem>
     </SidebarMenu>
   </SidebarHeader>
+}
+
+function resolvedNavItems(user?: User): NavItem[] {
+  if (!user) {
+    return [];
+  }
+
+  const hasUser = (...authorities: Authority[]) => user.authorities.some(a => authorities.includes(a));
+  const items: NavItem[] = [];
+
+
+  if (hasUser(Authority.ADMIN, Authority.ADMINISTRATIVE)) {
+    items.push({
+        title: "Usuarios",
+        url: "/users",
+        icon: UserIcon,
+      }, {
+        title: "Tips",
+        url: "/tips",
+        icon: BookOpen,
+      }, {
+        title: "Posts",
+        url: "/posts",
+        icon: ThumbsUp,
+      }, {
+        title: "Contenido didáctico",
+        url: "/didactic-content",
+        icon: Blocks,
+      },
+      {
+        title: "Profesionales",
+        url: "#",
+        icon: UserIcon,
+        items: [
+          {
+            title: "Gestion",
+            url: "/professionals",
+          },
+          {
+            title: "Horarios de atención",
+            url: "/professional-schedules",
+          },
+        ],
+      },
+    );
+  }
+
+
+  if (hasUser(Authority.LEGAL_PROFESSIONAL, Authority.MEDICAL_PROFESSIONAL, Authority.ADMIN, Authority.ADMINISTRATIVE)) {
+    items.push({
+        title: "Citas",
+        url: "#",
+        icon: Calendar,
+        items: [
+          {
+            title: "Gestion",
+            url: "/appointments",
+          },
+          {
+            title: "Calendario",
+            url: "/appointments-calendar",
+          }
+        ],
+      },
+    );
+  }
+
+  return items;
 }

@@ -48,7 +48,7 @@ import {
 import {ThemeToggle} from "@/components/theme-toggle.tsx";
 import {Button} from "@/components/ui/button.tsx";
 import ChatTopBar from "@/components/chat/chat-top-bar.tsx";
-import ChatListLayout from "@/components/chat/chat-list-layout.tsx";
+import ChatMessageListGenerator from "@/components/chat/chat-message-list-generator.tsx";
 import {StompProvider} from "@/context/stomp-context.tsx";
 import {
   useEffect,
@@ -139,40 +139,32 @@ function ChatContent({roomId, user}: Readonly<{ roomId: string, user?: User }>) 
     readMessages().then();
   }, [roomId, loadingMessages, messages]);
 
-  if (loadingMessages) {
-    return <div className="flex items-center justify-center h-32 flex-col">
-      <LoaderCircle className="w-8 h-8 animate-spin"/>
-      <p>Cargando...</p>
-    </div>
-  }
-
   const chatInfo = resolveChatInfo(room, user);
 
   return (
     <div className="flex flex-col h-screen">
       <div className="sticky top-0 z-10 bg-sidebar">
         <ExpandableChatHeader>
-          <ChatTopBar
-            avatar={chatInfo.avatar}
-            fallback={chatInfo.fallback}
-            roomName={chatInfo.roomName}
-          />
+          <ChatTopBar {...chatInfo}/>
         </ExpandableChatHeader>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <ChatListLayout
-          participans={room.participants}
-          messages={messages}
-          isMe={(senderId) => senderId === user?.id}
-        />
-      </div>
+      {loadingMessages ? <div className="flex items-center justify-center h-32 flex-col">
+        <LoaderCircle className="w-8 h-8 animate-spin"/>
+        <p>Cargando...</p>
+      </div> : <>
+        <div className="flex-1 overflow-y-auto">
+          <ChatMessageListGenerator
+            participans={room.participants}
+            messages={messages}
+            isMe={(senderId) => senderId === user?.id}
+          />
+        </div>
 
-      <div className="sticky bottom-0 z-10">
-        <ChatBottomBar
-          sendMessage={sendMessage}
-        />
-      </div>
+        <div className="sticky bottom-0 z-10">
+          <ChatBottomBar sendMessage={sendMessage}/>
+        </div>
+      </>}
     </div>
   );
 }
@@ -285,14 +277,7 @@ function ChatSidebarContent({roomId, user}: Readonly<{ roomId?: string, user: Us
   </SidebarContent>;
 }
 
-
-interface ChatInfo {
-  roomName: string
-  avatar?: string
-  fallback: string
-}
-
-function resolveChatInfo(room: Room, user?: User): ChatInfo {
+function resolveChatInfo(room: Room, user?: User): { roomName: string, avatar?: string, fallback: string } {
 
   if (room.type === ChatRoomType.PRIVATE) {
     const participant = room.participants.find(participant => participant.id !== user?.id);

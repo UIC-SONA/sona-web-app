@@ -27,29 +27,36 @@ createRoot(document.getElementById('root')!).render(
     <AlertDialogProvider>
       <AuthProvider>
         <BrowserRouter>
-          <Routes>
-            <Route element={<AuthGuard/>}>
-              <Route element={<MainLayout/>}>
-                <Route index element={<App/>}/>
-                <Route path="users" element={<UserPage/>}/>
-                <Route path="tips" element={<TipsPage/>}/>
-                <Route path="posts" element={<ForumPage/>}/>
-                <Route path="didactic-content" element={<DidacticContentPage/>}/>
-                <Route path="professional-schedules" element={<ProfessionalSchedulePage/>}/>
-                <Route path="professionals" element={<ProfessionalPage/>}/>
-                <Route path="appointments" element={<AppointmentPage/>}/>
-                <Route path="appointments-calendar" element={<AppointmentsCalendarPage/>}/>
-              </Route>
-              <Route path="auth" element={<AuthPage/>}>
-                <Route path="login" element={<LogIn/>}/>
-                <Route path="sign-up" element={<SingUp/>}/>
-              </Route>
-              <Route path="chat/:id?" element={<ChatPage/>}/>
-            </Route>
-          </Routes>
+          <AppRoutes/>
         </BrowserRouter>
       </AuthProvider>
       <Toaster/>
     </AlertDialogProvider>
   </ThemeContext>
 );
+
+function AppRoutes() {
+  return <Routes>
+    <Route element={<AuthGuard hasAuthenticated redirect="/auth/login"/>}>
+      <Route element={<MainLayout/>}>
+        <Route index element={<App/>}/>
+        <Route path="users" element={<UserPage/>}/>
+        <Route path="tips" element={<TipsPage/>}/>
+        <Route path="posts" element={<ForumPage/>}/>
+        <Route path="didactic-content" element={<DidacticContentPage/>}/>
+        <Route path="professional-schedules" element={<ProfessionalSchedulePage/>}/>
+        <Route path="professionals" element={<ProfessionalPage/>}/>
+        <Route path="appointments" element={<AppointmentPage/>}/>
+        <Route path="appointments-calendar" element={<AppointmentsCalendarPage/>}/>
+      </Route>
+      <Route path="chat/:id?" element={<ChatPage/>}/>
+    </Route>
+
+    <Route element={<AuthGuard redirect="/"/>}>
+      <Route path="auth" element={<AuthPage/>}>
+        <Route path="login" element={<LogIn/>}/>
+        <Route path="sign-up" element={<SingUp/>}/>
+      </Route>
+    </Route>
+  </Routes>
+}

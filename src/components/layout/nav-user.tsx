@@ -27,7 +27,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import {User, userService} from "@/services/user-service.ts";
-import {useEffect, useState} from "react";
 import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
 import {Link} from "react-router";
@@ -41,13 +40,7 @@ export function NavUser({user}: Readonly<NavUserProps>) {
   const {isMobile} = useSidebar()
   const {logoutUser} = useAuth();
   const {pushAlertDialog} = useAlertDialog();
-  const [profileImage, setProfileImage] = useState<string | null>(null)
 
-  useEffect(() => {
-    userService.profilePicture()
-      .then(setProfileImage)
-      .catch(() => setProfileImage(null))
-  }, [user.id])
 
   const logoutHandler = async () => {
     pushAlertDialog({
@@ -66,7 +59,7 @@ export function NavUser({user}: Readonly<NavUserProps>) {
             size="lg"
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
-            <ProfileInfo profilePicture={profileImage} user={user}/>
+            <ProfileInfo user={user}/>
             <ChevronsUpDown className="ml-auto size-4"/>
           </SidebarMenuButton>
         </DropdownMenuTrigger>
@@ -78,7 +71,7 @@ export function NavUser({user}: Readonly<NavUserProps>) {
         >
           <DropdownMenuLabel className="p-0 font-normal">
             <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-              <ProfileInfo profilePicture={profileImage} user={user}/>
+              <ProfileInfo user={user}/>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator/>
@@ -111,15 +104,11 @@ export function NavUser({user}: Readonly<NavUserProps>) {
   </SidebarMenu>;
 }
 
-interface ProfileInfoProps {
-  profilePicture: string | null
-  user: User
-}
 
-function ProfileInfo({profilePicture, user}: Readonly<ProfileInfoProps>) {
+function ProfileInfo({user}: Readonly<NavUserProps>) {
   return <>
     <Avatar className="h-8 w-8 rounded-lg">
-      <AvatarImage src={profilePicture ?? ''} alt={user.firstName}/>
+      <AvatarImage src={user.hasProfilePicture ? userService.profilePicturePath(user.id) : undefined}/>
       <AvatarFallback className="rounded-lg">
         {user.firstName[0]}
       </AvatarFallback>

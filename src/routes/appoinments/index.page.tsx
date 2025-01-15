@@ -144,19 +144,18 @@ function FilterComponent({filters}: Readonly<FilterComponentProps<AppointmentFil
 
   const {from, to, canceled, type, professionalId, userId} = filters.values;
   const [professional, setProfessional] = useState<User | undefined>();
-  const [user, setUser] = useState<User | undefined>();
+  const [attendant, setAttendant] = useState<User | undefined>();
 
   useEffect(() => {
     if (!professionalId) setProfessional(undefined);
   }, [professionalId]);
 
   useEffect(() => {
-    if (!userId) setUser(undefined);
+    if (!userId) setAttendant(undefined);
   }, [userId]);
 
   const fromValue = from ? new CalendarDate(from.getFullYear(), from.getMonth() + 1, from.getDate()) : null;
   const toValue = to ? new CalendarDate(to.getFullYear(), to.getMonth() + 1, to.getDate()) : null;
-
 
   return (
     <Card className="my-4">
@@ -180,7 +179,10 @@ function FilterComponent({filters}: Readonly<FilterComponentProps<AppointmentFil
               searchPlaceholder="Buscar profesional"
               value={professional}
               filters={{
-                authorities: [Authority.LEGAL_PROFESSIONAL, Authority.MEDICAL_PROFESSIONAL]
+                authorities: [
+                  Authority.LEGAL_PROFESSIONAL,
+                  Authority.MEDICAL_PROFESSIONAL
+                ]
               }}
               onSelect={(professional) => {
                 setProfessional(professional);
@@ -192,12 +194,12 @@ function FilterComponent({filters}: Readonly<FilterComponentProps<AppointmentFil
             <UserSelect
               selectItemText="Usuario"
               searchPlaceholder="Buscar usuario"
-              value={user}
+              value={attendant}
               filters={{
                 authorities: [Authority.USER]
               }}
               onSelect={(user) => {
-                setUser(user);
+                setAttendant(user);
                 filters.set("userId", user?.id);
               }}
             />

@@ -1,3 +1,6 @@
+import {useForm} from "react-hook-form";
+import {zodResolver} from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
   Card,
   CardContent,
@@ -5,10 +8,16 @@ import {
   CardFooter,
   CardHeader,
   CardTitle
-} from "@/components/ui/card.tsx";
-import onlyLogo from "@/assets/only_logo.png";
-import {Input} from "@/components/ui/input.tsx";
-import {Button} from "@/components/ui/button.tsx";
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
+import {Input} from "@/components/ui/input";
+import {Button} from "@/components/ui/button";
 import {
   Loader2,
   UserIcon
@@ -17,89 +26,135 @@ import {
   Link,
   useNavigate
 } from "react-router";
-import {FormEvent, useState} from "react";
-import {introspect} from "@/lib/errors.ts";
-import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
-import {useAuth} from "@/context/auth-context.tsx";
+import {
+  useAlertDialog
+} from "@/context/alert-dialog-context";
+import {
+  useLogin
+} from "@/context/auth-context";
+import onlyLogo from "@/assets/only_logo.png";
+import {
+  introspect
+} from "@/lib/errors.ts";
 
+
+const loginSchema = z.object({
+  username: z.string().min(1, "Usuario o correo electrónico es requerido"),
+  password: z.string().min(1, "Contraseña es requerida"),
+});
 
 export default function LogIn() {
-
   const navigate = useNavigate();
-  const {loginUser} = useAuth();
+  const {login, loading} = useLogin();
   const {pushAlertDialog} = useAlertDialog();
 
-  const [loading, setLoading] = useState(false);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const form = useForm({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+    },
+  });
 
-  const handleLogin = async (e: FormEvent) => {
-    e.preventDefault();
+
+  const onSubmit = async (data: z.infer<typeof loginSchema>) => {
     try {
-      setLoading(true);
-      await loginUser(username, password);
+      await login(data.username, data.password);
       navigate("/");
     } catch (error) {
       const err = introspect(error);
-      pushAlertDialog({
-        type: "error",
-        title: err.title,
-        description: err.description
-      });
-    } finally {
-      setLoading(false);
+
+      if (err.description === "Invalid user credentials") {
+        form.setError("root", {
+          type: "manual",
+          message: "Usuario o contraseña incorrectos",
+        });
+        return;
+      }
+      pushAlertDialog({type: "error", ...err});
     }
-  }
+  };
 
-  return <Card>
-    <CardHeader className="mb-4 text-center">
-      <CardTitle className="text-2xl font-bold md:mb-0 mb-4">
-        Iniciar sesión
-      </CardTitle>
-      <CardDescription>
-        <div className="md:hidden mb-4">
-          <img src={onlyLogo} alt="Logo" className="w-1/2 mx-auto mb-8"/>
-        </div>
-        Inicia sesión con tu cuenta de SONA
-      </CardDescription>
-    </CardHeader>
-    <CardContent>
-      <form className="space-y-4 mb-4" onSubmit={handleLogin}>
-        <Input
-          disabled={loading}
-          type="text"
-          placeholder="Usuario o correo electrónico"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
-        <Input
-          disabled={loading}
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <Button
-          type="submit"
-          className="w-full"
-        >
-          {loading
-            ? <Loader2 className="animate-spin"/>
-            : <UserIcon className="h-5 w-5 mr-2"/>
-          }
+  return (
+    <Card>
+      <CardHeader className="mb-4 text-center">
+        <CardTitle className="text-2xl font-bold md:mb-0 mb-4">
           Iniciar sesión
-        </Button>
-      </form>
-    </CardContent>
-    <CardFooter className="flex flex-col items-center">
-      <p className="text-center text-sm">
-        ¿No tienes una cuenta?{" "}
-        <Link to="/auth/sign-up" className="underline text-primary">
-          Regístrate
-        </Link>
-      </p>
-    </CardFooter>
-  </Card>;
+        </CardTitle>
+        <CardDescription>
+          <div className="md:hidden mb-4">
+            <img src={onlyLogo} alt="Logo" className="w-1/2 mx-auto mb-8"/>
+          </div>
+          Inicia sesión con tu cuenta de SONA
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mb-4">
+            <FormField
+              control={form.control}
+              name="username"
+              render={({field}) => (
+                <FormItem>
+                  <FormControl>
+                    <Input
+                      disabled={loading}
+                      placeholder="Usuario o correo electrónico"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage/>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({field}) => (
+                <FormItem>
+                  <FormControl>
+                    <Input
+                      disabled={loading}
+                      type="password"
+                      placeholder="Password"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage/>
+                </FormItem>
+              )}
+            />
+
+            {form.formState.errors.root && (
+              <div className="text-red-500 text-sm">
+                {form.formState.errors.root.message}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading}
+            >
+              {loading ? (
+                <Loader2 className="animate-spin"/>
+              ) : (
+                <UserIcon className="h-5 w-5 mr-2"/>
+              )}
+              Iniciar sesión
+            </Button>
+          </form>
+        </Form>
+      </CardContent>
+      <CardFooter className="flex flex-col items-center">
+        <p className="text-center text-sm">
+          ¿No tienes una cuenta?{" "}
+          <Link to="/auth/sign-up" className="underline text-primary">
+            Regístrate
+          </Link>
+        </p>
+      </CardFooter>
+    </Card>
+  );
 }
-
-

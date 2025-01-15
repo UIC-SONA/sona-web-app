@@ -25,10 +25,6 @@ jobs:
       - name: Build
         run: npm run build
 
-      #      - name: Create env file
-      #        run: |
-      #          echo "${{ secrets.ENV_FILE }}" > .env
-
       - name: Send build files to remote server
         if: success()
         env:

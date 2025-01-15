@@ -52,7 +52,7 @@ export function isAccessTokenError(error: unknown): error is AccessTokenError {
 const introspectAuthorization = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`);
 const introspectAuthorizationHeader = `Basic ${introspectAuthorization}`;
 
-export async function login(username: string, password: string): Promise<AccessToken> {
+export async function login(username: string, password: string): Promise<void> {
   const response = await axios.post<AccessToken>(
     TOKEN_END_POINT,
     new URLSearchParams({
@@ -70,10 +70,12 @@ export async function login(username: string, password: string): Promise<AccessT
     }
   );
 
-  return response.data;
+  saveAccessToken(response.data);
 }
 
-export async function logout(accessToken: AccessToken) {
+export async function logout() {
+  const accessToken = loadAccessToken();
+  if (!accessToken) return;
   await axios.post(
     END_SESSION_ENDPOINT,
     new URLSearchParams({
@@ -88,6 +90,8 @@ export async function logout(accessToken: AccessToken) {
       },
     }
   );
+
+  clearAccessToken();
 }
 
 export async function userInfo(accessToken: AccessToken): Promise<UserInfo> {
@@ -192,10 +196,10 @@ export function loadAccessToken(): AccessToken | null {
   return null;
 }
 
-export function saveAccessToken(token: AccessToken) {
+function saveAccessToken(token: AccessToken) {
   localStorage.setItem(ACCESS_TOKEN_KEY, JSON.stringify(token));
 }
 
-export function clearAccessToken() {
+function clearAccessToken() {
   localStorage.removeItem(ACCESS_TOKEN_KEY);
 }

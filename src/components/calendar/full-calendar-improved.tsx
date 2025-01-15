@@ -32,7 +32,7 @@ type DayRenderProps = {
 
 const FullCalendarImproved = forwardRef<FullCalendar, ComponentProps<typeof FullCalendar>>((props, ref) => {
 
-    const {datesSet, ...p} = props;
+    const {datesSet, ...rest} = props;
 
     return <FullCalendar
       ref={ref}
@@ -76,7 +76,7 @@ const FullCalendarImproved = forwardRef<FullCalendar, ComponentProps<typeof Full
       nowIndicator
       editable
       selectable
-      {...p}
+      {...rest}
     />;
   }
 );

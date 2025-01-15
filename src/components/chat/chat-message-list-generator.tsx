@@ -36,7 +36,7 @@ interface ChatListProps {
   isMe: (senderId: number) => boolean;
 }
 
-export default function ChatListLayout({messages, participans, isMe}: Readonly<ChatListProps>) {
+export default function ChatMessageListGenerator({messages, participans, isMe}: Readonly<ChatListProps>) {
   return <div className="w-full overflow-y-hidden h-full flex flex-col">
     <ChatMessageList>
       <AnimatePresence>
@@ -95,13 +95,13 @@ function ChatBubbleStatus({status, hasRead}: Readonly<{ status: StatusMessage, h
   return <></>
 }
 
-const getFormattedTime = (date: Date) => {
+function getFormattedTime(date: Date) {
   const now = new Date();
   let minutesAgo = Math.floor((now.getTime() - date.getTime()) / 1000 / 60);
   minutesAgo = minutesAgo < 0 ? 0 : minutesAgo;
 
   if (minutesAgo == 0) {
-    return "Enviado recientemente";
+    return "Recientemente";
   }
 
   if (minutesAgo < 60) {

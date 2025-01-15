@@ -12,7 +12,11 @@ import {
   ReadOperations,
   WriteOperations, Deletable
 } from "@/lib/crud.ts";
-import {Axios, AxiosHeaders, RawAxiosRequestHeaders} from "axios";
+import {
+  Axios,
+  AxiosHeaders,
+  RawAxiosRequestHeaders
+} from "axios";
 
 
 type Headers = RawAxiosRequestHeaders | AxiosHeaders;

@@ -1,23 +1,5 @@
-import {
-  createContext,
-  type PropsWithChildren,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState
-} from 'react';
-import {
-  AccessToken,
-  clearAccessToken,
-  isAccessToken,
-  loadAccessToken,
-  login,
-  logout,
-  saveAccessToken,
-  RefreshTokenBadResult,
-  updateAndLoadAccessToken
-} from "@/services/auth-service.ts";
+import {createContext, type PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState} from 'react';
+import {isAccessToken, login, logout, RefreshTokenBadResult, updateAndLoadAccessToken} from "@/services/auth-service.ts";
 import {ErrorTitle, introspect} from "@/lib/errors.ts";
 import {Authority, User, userService} from "@/services/user-service.ts";
 
@@ -30,7 +12,6 @@ const AUTHORIZED = [
 ];
 
 export interface AuthContextState {
-  loginUser: (username: string, password: string) => Promise<void>;
   logoutUser: () => Promise<void>;
   initializing: boolean;
   user?: User;
@@ -101,34 +82,19 @@ export default function AuthProvider({children}: Readonly<PropsWithChildren>) {
     initialize().then();
   }, []);
 
-
-  const loginUser = async (username: string, password: string) => {
-    try {
-      const accessToken = await login(username, password);
-      saveAccessToken(accessToken);
-      await refreshUser();
-    } catch (error) {
-      setError(introspect(error));
-    }
-  };
-
   const logoutUser = useCallback(async () => {
     try {
-      const accessToken: AccessToken | null = loadAccessToken();
-      if (accessToken) await logout(accessToken);
+      await logout();
       setAuthenticated(false);
       setUser(undefined);
     } catch (error) {
       setError(introspect(error));
-    } finally {
-      clearAccessToken();
     }
   }, []);
 
   const clearError = useCallback(() => setError(undefined), []);
 
   const value = useMemo(() => ({
-    loginUser,
     logoutUser,
     initializing,
     error,
@@ -151,4 +117,28 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+}
+
+
+export function useLogin(): { login: (username: string, password: string) => Promise<void>, loading: boolean, error?: ErrorTitle } {
+  const {refreshUser} = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<ErrorTitle | undefined>();
+
+  return {
+    login: async (username: string, password: string) => {
+      setLoading(true);
+      try {
+        await login(username, password);
+        await refreshUser();
+      } catch (error) {
+        setError(introspect(error));
+        throw error;
+      } finally {
+        setLoading(false);
+      }
+    },
+    loading,
+    error
+  };
 }

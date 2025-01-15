@@ -161,15 +161,12 @@ export const AlertDialogProvider = ({children}: Readonly<PropsWithChildren>) => 
       }
 
       await executeCallback(callback);
-
       popAlertDialog(dialog.id);
-
     } catch (error) {
 
       console.error('Error executing dialog action:', error);
 
       dialog.onError?.(error);
-
       if (isAsync) {
         setLoadingState(prev => prev.filter(state => !(state.dialogId === dialog.id && state.action === action)));
       }
@@ -187,7 +184,6 @@ export const AlertDialogProvider = ({children}: Readonly<PropsWithChildren>) => 
       {children}
       {dialogs.map((dialog) => {
         const thisDialogLoading = isDialogLoading(dialog.id);
-
         return <AlertDialog key={dialog.id} open={!dialog.isClosing}>
           <AlertDialogContent className="sm:max-w-[425px]">
             <AlertDialogHeader>

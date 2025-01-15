@@ -68,9 +68,9 @@ export default function ForumPage() {
   }
 
   return (
-    <BreadcrumbSubLayout items={["Foro"]}>
+    <BreadcrumbSubLayout items={["Publicaciones"]}>
       <CrudTable<Post, PostDto, string>
-        title={"Foro"}
+        title={"Publicaciones"}
         operations={{
           find: postService.find,
           page: postService.page,

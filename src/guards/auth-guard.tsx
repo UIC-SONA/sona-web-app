@@ -31,6 +31,14 @@ export default function AuthGuard({hasAuthenticated = false, redirect, hasAuthor
   useLayoutEffect(() => {
     if (initializing) return;
 
+    if (user && authenticated && hasAuthorized) {
+      if (!hasAuthorized(user)) {
+        navigate(redirect);
+      }
+      setGuarding(false);
+      return;
+    }
+
     if (hasAuthenticated && !authenticated) {
       navigate(redirect);
       return;
@@ -39,12 +47,6 @@ export default function AuthGuard({hasAuthenticated = false, redirect, hasAuthor
     if (!hasAuthenticated && authenticated) {
       navigate(redirect);
       return;
-    }
-
-    if (user && authenticated && hasAuthorized) {
-      if (!hasAuthorized(user)) {
-        navigate(redirect);
-      }
     }
 
     setGuarding(false);

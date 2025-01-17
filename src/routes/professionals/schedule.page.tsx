@@ -41,7 +41,12 @@ import {
 } from "@/components/ui/form.tsx";
 import {z} from "zod";
 import {CrudSchema} from "@/components/crud/crud-common.ts";
-import {cn, dispatchAsyncStates, getCSSVariableValue, getPeriod} from "@/lib/utils.ts";
+import {
+  cn,
+  dispatchAsyncStates,
+  getCSSVariableValue,
+  getPeriod
+} from "@/lib/utils.ts";
 import {Input} from "@/components/ui/input.tsx";
 import {es} from 'date-fns/locale/es';
 import {
@@ -67,7 +72,10 @@ import {Label} from "@/components/ui/label.tsx";
 import {useTheme} from "@/context/theme-context.tsx";
 import FullCalendar from "@fullcalendar/react";
 import {Card} from "@/components/ui/card.tsx";
-import {CalendarDate, today} from "@internationalized/date";
+import {
+  CalendarDate,
+  today
+} from "@internationalized/date";
 import DateRangePicker from "@/components/ui/date/date-range-picker.tsx";
 import DatePicker from "@/components/ui/date/date-picker.tsx";
 import {ZONE_ID} from "@/constans.ts";

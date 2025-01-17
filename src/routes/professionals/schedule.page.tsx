@@ -6,7 +6,6 @@ import {
   professionalScheduleService,
 } from "@/services/professional-schedule-service.ts";
 import {
-  Authority,
   User,
   userService
 } from "@/services/user-service.ts";
@@ -156,6 +155,7 @@ export default function ProfessionalSchedulePage() {
   }, [professional, range]);
 
   useEffect(() => {
+    // FORZAR EL CAMBIO DE ESTADO DE LOS COLORES DE LOS EVENTOS CUANDO SE CAMBIE EL TEMA
     setAppointments([...appointments]);
   }, [theme]);
 

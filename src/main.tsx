@@ -32,7 +32,7 @@ createRoot(document.getElementById('root')!).render(
     <AlertDialogProvider>
       <AuthProvider>
         <BrowserRouter>
-          <AppRoutes/>
+          <SonaRoutes/>
         </BrowserRouter>
       </AuthProvider>
       <Toaster/>
@@ -40,7 +40,7 @@ createRoot(document.getElementById('root')!).render(
   </ThemeContext>
 );
 
-function AppRoutes() {
+function SonaRoutes() {
   return <Routes>
     <Route element={<AuthGuard hasAuthenticated redirect="/auth/login"/>}>
       <Route element={<MainLayout/>}>
@@ -58,7 +58,6 @@ function AppRoutes() {
       </Route>
       <Route path="chat/:id?" element={<ChatPage/>}/>
     </Route>
-
     <Route element={<AuthGuard redirect="/"/>}>
       <Route path="auth" element={<AuthPage/>}>
         <Route path="login" element={<LogIn/>}/>

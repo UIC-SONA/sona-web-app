@@ -11,17 +11,18 @@ import {
 import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
 import {LoaderCircle} from "lucide-react";
+import {User} from "@/services/user-service.ts";
 
 
 type AuthGuardProps = {
   hasAuthenticated?: boolean;
   redirect: string;
+  hasAuthorized?: (user: User) => boolean;
 };
 
+export default function AuthGuard({hasAuthenticated = false, redirect, hasAuthorized}: Readonly<AuthGuardProps>) {
 
-export default function AuthGuard({hasAuthenticated = false, redirect}: Readonly<AuthGuardProps>) {
-
-  const {initializing, error, authenticated, clearError} = useAuth();
+  const {initializing, error, authenticated, clearError, user} = useAuth();
   const {pathname} = useLocation();
   const {pushAlertDialog} = useAlertDialog();
   const [guarding, setGuarding] = useState(true);
@@ -40,15 +41,20 @@ export default function AuthGuard({hasAuthenticated = false, redirect}: Readonly
       return;
     }
 
+    if (user && authenticated && hasAuthorized) {
+      if (!hasAuthorized(user)) {
+        navigate(redirect);
+      }
+    }
+
     setGuarding(false);
-  }, [initializing, pathname, authenticated]);
+  }, [initializing, pathname, authenticated, user]);
 
   useEffect(() => {
     if (error) {
       pushAlertDialog({
         type: "error",
-        title: error.title,
-        description: error.description,
+        ...error,
         onConfirm: () => {
           navigate('/auth/login')
           clearError();

@@ -13,7 +13,7 @@ import {
 import {Checkbox} from "@/components/ui/checkbox.tsx";
 import {
   Authority,
-  User,
+  User, userService,
 } from "@/services/user-service.ts";
 import {
   Select,
@@ -143,6 +143,7 @@ export function AppointmentPage() {
 function FilterComponent({filters}: Readonly<FilterComponentProps<AppointmentFilters>>) {
 
   const {from, to, canceled, type, professionalId, userId} = filters.values;
+  const {user} = useAuth();
   const [professional, setProfessional] = useState<User | undefined>();
   const [attendant, setAttendant] = useState<User | undefined>();
 
@@ -173,23 +174,21 @@ function FilterComponent({filters}: Readonly<FilterComponentProps<AppointmentFil
           </div>
         </div>
         <div className="flex flex-wrap gap-4 items-center justify-center mt-3">
-          <div className="w-60">
-            <UserSelect
-              selectItemText="Profesional"
-              searchPlaceholder="Buscar profesional"
-              value={professional}
-              filters={{
-                authorities: [
-                  Authority.LEGAL_PROFESSIONAL,
-                  Authority.MEDICAL_PROFESSIONAL
-                ]
-              }}
-              onSelect={(professional) => {
-                setProfessional(professional);
-                filters.set("professionalId", professional?.id);
-              }}
-            />
-          </div>
+
+          {(user && userService.hasPrivilegedUser(user)) && <div className="w-60">
+              <UserSelect
+                  selectItemText="Profesional"
+                  searchPlaceholder="Buscar profesional"
+                  value={professional}
+                  filters={{
+                    authorities: userService.professionalAuthorities,
+                  }}
+                  onSelect={(professional) => {
+                    setProfessional(professional);
+                    filters.set("professionalId", professional?.id);
+                  }}
+              />
+          </div>}
           <div className="w-60">
             <UserSelect
               selectItemText="Usuario"

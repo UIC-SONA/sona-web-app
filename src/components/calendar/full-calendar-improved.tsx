@@ -17,6 +17,7 @@ import {
 } from "react";
 
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip.tsx";
+import {cn} from "@/lib/utils.ts";
 
 type EventItemProps = {
   info: EventContentArg;
@@ -83,14 +84,13 @@ const FullCalendarImproved = forwardRef<FullCalendar, ComponentProps<typeof Full
 
 const EventItem = ({info}: EventItemProps) => {
   const {event, backgroundColor, textColor} = info;
-  const {tooltipContent} = event.extendedProps;
+  const {tooltipContent, className} = event.extendedProps;
   const [left, right] = info.timeText.split(" - ");
-
 
   const MonthViewContent = () => (
     <div
-      style={{backgroundColor: backgroundColor, color: textColor}}
-      className="flex flex-col rounded-md w-full px-2 py-1"
+      // style={{backgroundColor: backgroundColor, color: textColor}}
+      className={cn("flex flex-col rounded-md w-full px-2 py-1", className)}
     >
       <p className="font-semibold line-clamp-1 w-11/12 text-[0.5rem] sm:text-[0.6rem] md:text-xs">
         {event.title}
@@ -103,7 +103,7 @@ const EventItem = ({info}: EventItemProps) => {
   const WeekViewContent = () => (
     <div
       style={{backgroundColor: backgroundColor, color: textColor}}
-      className="flex flex-col space-y-0 p-1 rounded-md"
+      className={cn("flex flex-col space-y-0 p-1 rounded-md", className)}
     >
       <p className="font-semibold w-full line-clamp-1 mb-2 text-[0.5rem] sm:text-[0.6rem] md:text-xs">
         {event.title}

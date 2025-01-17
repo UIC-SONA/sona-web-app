@@ -102,7 +102,7 @@ export default function AuthProvider({children}: Readonly<PropsWithChildren>) {
     clearError,
     refreshUser,
     authenticated
-  }), [error, initializing, authenticated, logoutUser]);
+  }), [error, initializing, authenticated]);
 
   return (
     <AuthContext.Provider value={value}>

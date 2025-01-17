@@ -1,5 +1,9 @@
 import {createRoot} from 'react-dom/client'
-import {BrowserRouter, Route, Routes} from "react-router";
+import {
+  BrowserRouter,
+  Route,
+  Routes
+} from "react-router";
 import './index.css'
 import AuthProvider from "@/context/auth-context.tsx";
 import ThemeContext from "@/context/theme-context.tsx";
@@ -20,6 +24,7 @@ import ChatPage from "@/routes/chat/index.page.tsx";
 import AuthPage from "@/routes/auth/index.page.tsx";
 import LogIn from "@/routes/auth/log-in.page.tsx";
 import SingUp from "@/routes/auth/sing-up.page.tsx";
+import {userService} from "@/services/user-service.ts";
 
 
 createRoot(document.getElementById('root')!).render(
@@ -40,12 +45,14 @@ function AppRoutes() {
     <Route element={<AuthGuard hasAuthenticated redirect="/auth/login"/>}>
       <Route element={<MainLayout/>}>
         <Route index element={<App/>}/>
-        <Route path="users" element={<UserPage/>}/>
-        <Route path="tips" element={<TipsPage/>}/>
-        <Route path="posts" element={<ForumPage/>}/>
-        <Route path="didactic-content" element={<DidacticContentPage/>}/>
-        <Route path="professional-schedules" element={<ProfessionalSchedulePage/>}/>
-        <Route path="professionals" element={<ProfessionalPage/>}/>
+        <Route element={<AuthGuard hasAuthorized={userService.hasPrivilegedUser} redirect="/"/>}>
+          <Route path="users" element={<UserPage/>}/>
+          <Route path="tips" element={<TipsPage/>}/>
+          <Route path="posts" element={<ForumPage/>}/>
+          <Route path="didactic-content" element={<DidacticContentPage/>}/>
+          <Route path="professional-schedules" element={<ProfessionalSchedulePage/>}/>
+          <Route path="professionals" element={<ProfessionalPage/>}/>
+        </Route>
         <Route path="appointments" element={<AppointmentPage/>}/>
         <Route path="appointments-calendar" element={<AppointmentsCalendarPage/>}/>
       </Route>

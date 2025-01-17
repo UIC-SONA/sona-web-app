@@ -6,7 +6,8 @@ import {
 import {Checkbox} from "@/components/ui/checkbox.tsx";
 import {
   ClickToShowUUID,
-  ItemsOnRounded, LoadingImage,
+  ItemsOnRounded,
+  LoadingImage,
   OpenImageModal,
   Truncate
 } from "@/components/utils-componentes.tsx";
@@ -24,7 +25,10 @@ import {Textarea} from "@/components/ui/textarea.tsx";
 import MultipleSelector from "@/components/ui/multiple-selector.tsx";
 import {Switch} from "@/components/ui/switch.tsx";
 import {FormComponentProps} from "@/components/crud/crud-forms.tsx";
-import CrudTable, {FormFactory, TableFactory} from "@/components/crud/crud-table.tsx";
+import CrudTable, {
+  FormFactory,
+  TableFactory
+} from "@/components/crud/crud-table.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
 
 export default function TipsPage() {
@@ -116,22 +120,12 @@ export default function TipsPage() {
     },
     create: {
       schema: z.object({
-        title: z
-          .string()
-          .nonempty("El título es requerido"),
-        summary: z
-          .string()
-          .nonempty("El resumen es requerido"),
-        description: z
-          .string()
-          .nonempty("La descripción es requerida"),
-        tags: z
-          .array(z.string())
-          .nonempty("Los tags son requeridos"),
-        active: z
-          .boolean(),
-        image: z
-          .instanceof(File),
+        title: z.string().nonempty("El título es requerido"),
+        summary: z.string().nonempty("El resumen es requerido"),
+        description: z.string().nonempty("La descripción es requerida"),
+        tags: z.array(z.string()).nonempty("Los tags son requeridos"),
+        active: z.boolean(),
+        image: z.instanceof(File),
       }),
       defaultValues: {
         title: "",

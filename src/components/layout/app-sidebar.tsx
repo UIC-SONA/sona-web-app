@@ -1,14 +1,36 @@
 import * as React from "react"
-import {Blocks, BookOpen, Calendar, LoaderCircle, ThumbsUp, UserIcon,} from "lucide-react"
-
-import {Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail,} from "@/components/ui/sidebar"
+import {
+  Blocks,
+  BookOpen,
+  Calendar,
+  LoaderCircle,
+  ThumbsUp,
+  UserIcon,
+} from "lucide-react"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+} from "@/components/ui/sidebar"
 import onlyLogo from "@/assets/only_logo.png";
 import {Separator} from "@/components/ui/separator.tsx";
 import {Link} from "react-router";
-import {NavItem, NavMain} from "@/components/layout/nav-main.tsx";
+import {
+  NavItem,
+  NavMain
+} from "@/components/layout/nav-main.tsx";
 import {NavUser} from "@/components/layout/nav-user.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
-import {Authority, User} from "@/services/user-service.ts";
+import {
+  Authority,
+  User,
+  userService
+} from "@/services/user-service.ts";
 
 
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
@@ -63,11 +85,9 @@ function resolvedNavItems(user?: User): NavItem[] {
     return [];
   }
 
-  const hasUser = (...authorities: Authority[]) => user.authorities.some(a => authorities.includes(a));
   const items: NavItem[] = [];
 
-
-  if (hasUser(Authority.ADMIN, Authority.ADMINISTRATIVE)) {
+  if (userService.hasUser(user, Authority.ADMIN, Authority.ADMINISTRATIVE)) {
     items.push({
         title: "Usuarios",
         url: "/users",
@@ -103,8 +123,7 @@ function resolvedNavItems(user?: User): NavItem[] {
     );
   }
 
-
-  if (hasUser(Authority.LEGAL_PROFESSIONAL, Authority.MEDICAL_PROFESSIONAL, Authority.ADMIN, Authority.ADMINISTRATIVE)) {
+  if (userService.hasUser(user, Authority.LEGAL_PROFESSIONAL, Authority.MEDICAL_PROFESSIONAL, Authority.ADMIN, Authority.ADMINISTRATIVE)) {
     items.push({
         title: "Citas",
         url: "#",

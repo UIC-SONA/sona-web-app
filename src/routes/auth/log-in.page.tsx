@@ -39,7 +39,10 @@ import {
 
 
 const loginSchema = z.object({
-  username: z.string().min(1, "Usuario o correo electrónico es requerido"),
+  username: z.string()
+    .min(1, "Usuario o correo electrónico es requerido")
+    .max(50, "asdasdsad")
+  ,
   password: z.string().min(1, "Contraseña es requerida"),
 });
 

@@ -182,7 +182,7 @@ export default function ProfessionalSchedulePage() {
                   page: 0,
                   size: 15,
                   filters: {
-                    authorities: [Authority.LEGAL_PROFESSIONAL, Authority.MEDICAL_PROFESSIONAL]
+                    authorities: userService.professionalAuthorities,
                   },
                 });
                 return professionals.content;

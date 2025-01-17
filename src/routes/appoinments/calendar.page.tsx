@@ -11,7 +11,7 @@ import {
 } from "@/services/appointments-service.ts";
 import {
   Authority,
-  User
+  User, userService
 } from "@/services/user-service.ts";
 import FullCalendarController from "@/components/calendar/full-calendar-controller.tsx";
 import {
@@ -37,16 +37,22 @@ import {EventInput} from "@fullcalendar/core";
 import {Button} from "@/components/ui/button.tsx";
 import UserSelect from "@/components/user-select.tsx";
 import AppointmentView from "@/components/appointment-view.tsx";
+import {useAuth} from "@/context/auth-context.tsx";
+import {useTheme} from "@/context/theme-context.tsx";
 
 export default function AppointmentsCalendarPage() {
 
   const calendarRef = useRef<FullCalendar | null>(null);
+
+  const {user} = useAuth();
+  const {theme} = useTheme();
+
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [appointment, setAppointment] = useState<Appointment | undefined>();
   const [range, setRange] = useState({from: new Date(), to: new Date()});
   const [loading, setLoading] = useState(false);
   const [professional, setProfessional] = useState<User | undefined>();
-  const [user, setUser] = useState<User | undefined>();
+  const [attendant, setAttendant] = useState<User | undefined>();
   const [canceled, setCanceled] = useState<boolean | undefined>();
   const [type, setType] = useState<AppointmentType | undefined>();
 
@@ -80,6 +86,12 @@ export default function AppointmentsCalendarPage() {
     loadAppointments().then();
   }, [range, professional, canceled, type]);
 
+  useEffect(() => {
+    setAppointments([...appointments]);
+  }, [theme]);
+
+  const hasPrivileges = (user != undefined && userService.hasPrivilegedUser(user));
+
   return (
     <BreadcrumbSubLayout items={['Citas', 'Calendario']}>
       <h1 className="text-2xl font-bold mb-4">Calendario de Citas</h1>
@@ -98,26 +110,26 @@ export default function AppointmentsCalendarPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-4 items-center justify-center mt-3">
-            <div className="w-60">
-              <UserSelect
-                selectItemText="Profesional"
-                searchPlaceholder="Buscar profesional"
-                value={professional}
-                filters={{
-                  authorities: [Authority.LEGAL_PROFESSIONAL, Authority.MEDICAL_PROFESSIONAL]
-                }}
-                onSelect={setProfessional}
-              />
-            </div>
+            {hasPrivileges && <div className="w-60">
+                <UserSelect
+                    selectItemText="Profesional"
+                    searchPlaceholder="Buscar profesional"
+                    value={professional}
+                    filters={{
+                      authorities: userService.professionalAuthorities,
+                    }}
+                    onSelect={setProfessional}
+                />
+            </div>}
             <div className="w-60">
               <UserSelect
                 selectItemText="Usuario"
                 searchPlaceholder="Buscar usuario"
-                value={user}
+                value={attendant}
                 filters={{
                   authorities: [Authority.USER]
                 }}
-                onSelect={setUser}
+                onSelect={setAttendant}
               />
             </div>
             <SelectAppointmentType
@@ -144,7 +156,7 @@ export default function AppointmentsCalendarPage() {
             ref={calendarRef}
             slotMinTime="00:00:00"
             slotMaxTime="24:00:00"
-            events={toEventsInputs(appointments)}
+            events={toEventsInputs(appointments, hasPrivileges)}
             datesSet={(arg) => setRange({from: arg.start, to: arg.end})}
             eventClick={(arg) => setAppointment(arg.event.extendedProps.appointment)}
           />
@@ -156,31 +168,31 @@ export default function AppointmentsCalendarPage() {
 }
 
 
-function toEventsInputs(appointments: Appointment[]): EventInput[] {
+function toEventsInputs(appointments: Appointment[], hasPrivileged?: boolean): EventInput[] {
+  const now = new Date();
+
   return appointments.map((appointment) => {
     const range = appointment.range;
     const canceled = appointment.canceled;
+    const isPast = range.to < now;
 
-    const scheduleColor = canceled
-      ? getCSSVariableValue("--destructive")
-      : getCSSVariableValue("--primary");
-    const scheduletextColor = canceled
-      ? getCSSVariableValue("--destructive-foreground")
-      : getCSSVariableValue("--primary-foreground");
+    const title = hasPrivileged
+      ? `${appointment.professional.firstName} ${appointment.professional.lastName}`
+      : `${appointment.attendant.firstName} ${appointment.attendant.lastName}`
 
     return {
       id: appointment.id.toString(),
-      title: `${appointment.professional.firstName} ${appointment.professional.lastName}`,
+      title,
       start: range.from,
       end: range.to,
       editable: false,
-      backgroundColor: `hsl(${scheduleColor})`,
-      textColor: `hsl(${scheduletextColor})`,
+      backgroundColor: `hsl(${getAppointmentColorVariable(canceled, isPast, false)})`,
+      textColor: `hsl(${getAppointmentColorVariable(canceled, isPast, true)})`,
       extendedProps: {
         appointment,
         tooltipContent: {
           props: {
-            className: "flex flex-col space-y-2  p-2 rounded-md shadow-md border border-gray-200"
+            className: "flex flex-col space-y-2 p-2 rounded-md shadow-md border border-gray-200"
           },
           child: (
             <div className="flex flex-col space-y-2">
@@ -193,4 +205,12 @@ function toEventsInputs(appointments: Appointment[]): EventInput[] {
       }
     }
   });
+}
+
+function getAppointmentColorVariable(isCanceled: boolean, isPast: boolean, isForeground: boolean) {
+  const suffix = isForeground ? '-foreground' : '';
+
+  if (isCanceled) return getCSSVariableValue(`--destructive${suffix}`);
+  if (isPast) return getCSSVariableValue(`--muted${suffix}`);
+  return getCSSVariableValue(`--primary${suffix}`);
 }

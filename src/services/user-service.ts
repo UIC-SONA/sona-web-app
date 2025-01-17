@@ -150,6 +150,23 @@ function getAuthorityName(authority: Authority): string {
   }
 }
 
+const professionalAuthorities = [
+  Authority.MEDICAL_PROFESSIONAL,
+  Authority.LEGAL_PROFESSIONAL
+]
+
+const priviligedAuthorities = [
+  Authority.ADMIN,
+  Authority.ADMINISTRATIVE,
+]
+
+function hasUser(user: User, ...authorities: Authority[]) {
+  return user.authorities.some(a => authorities.includes(a));
+}
+
+function hasPrivilegedUser(user: User) {
+  return hasUser(user, ...priviligedAuthorities);
+}
 
 const crudOperations = restCrud<User, UserDto, number, UserFilter>(apiClient, resource)
 
@@ -165,4 +182,8 @@ export const userService = {
   getAuthorityName,
   enable,
   mapUsers,
+  professionalAuthorities,
+  priviligedAuthorities,
+  hasUser,
+  hasPrivilegedUser,
 };

@@ -262,6 +262,7 @@ function ChatSidebar({roomId, user}: Readonly<{ roomId?: string, user: User }>) 
 }
 
 function ChatSidebarContent({roomId, user}: Readonly<{ roomId?: string, user: User }>) {
+
   const {rooms, loading} = useChat();
   const {toggleSidebar} = useSidebar();
   const isMobile = useIsMobile();
@@ -279,7 +280,7 @@ function ChatSidebarContent({roomId, user}: Readonly<{ roomId?: string, user: Us
 
           const {lastMessage} = room;
 
-          const newMessage = lastMessage.sentBy.id === user.id
+          const hasRead = lastMessage.sentBy.id === user.id
             || lastMessage
               .readBy
               .map(readBy => readBy.participant.id).includes(user.id);
@@ -300,7 +301,7 @@ function ChatSidebarContent({roomId, user}: Readonly<{ roomId?: string, user: Us
                   )}
                 >
                   <ChatPreviewMenu room={room}/>
-                  {newMessage ? <MessageCircleMore className="w-4 h-4"/> : <></>}
+                  {hasRead ? <></> : <MessageCircleMore className="w-4 h-4"/>}
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>

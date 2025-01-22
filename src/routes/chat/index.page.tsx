@@ -18,11 +18,14 @@ import {
   useParams
 } from "react-router";
 import {
-  ArrowBigLeft, ArrowBigRight,
-  LoaderCircle, Menu,
+  ArrowBigLeft,
+  ArrowBigRight,
+  Image,
+  LoaderCircle,
+  Menu,
   MessageCircleMore,
   MessageSquare,
-  SendHorizonal
+  SendHorizontal
 } from "lucide-react";
 import {
   ChatProvider,
@@ -51,7 +54,7 @@ import ChatTopBar from "@/components/chat/chat-top-bar.tsx";
 import ChatMessageListGenerator from "@/components/chat/chat-message-list-generator.tsx";
 import {StompProvider} from "@/context/stomp-context.tsx";
 import {
-  useEffect,
+  useEffect, useRef,
   useState
 } from "react";
 import {cn} from "@/lib/utils.ts";
@@ -75,7 +78,6 @@ export default function ChatPage() {
   useEffect(() => {
     document.body.style.pointerEvents = "";
   }, []);
-
 
   return <StompProvider url={stompUri}>
     <ChatProvider user={user}>
@@ -132,20 +134,27 @@ function ChatSidebarTrigger() {
 
 function ChatContent({roomId, user}: Readonly<{ roomId: string, user?: User }>) {
 
-  const {room, messages, loadingMessages, sendMessage, readMessages} = useChatRoom(roomId);
+  const {loading, room, messages, loadingMessages, sendMessage} = useChatRoom(roomId);
 
-  useEffect(() => {
-    if (loadingMessages || messages.length === 0) return;
-    readMessages().then();
-  }, [roomId, loadingMessages, messages]);
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">
+      <LoaderCircle className="w-8 h-8 animate-spin"/>
+      <p>Cargando...</p>
+    </div>
+  }
 
-  const chatInfo = resolveChatInfo(room, user);
+  if (!room) {
+    return <div className="flex items-center justify-center h-screen">
+      <p>Conversación no encontrada</p>
+    </div>
+  }
 
   return (
     <div className="flex flex-col h-screen">
+
       <div className="sticky top-0 z-10 bg-sidebar">
         <ExpandableChatHeader>
-          <ChatTopBar {...chatInfo}/>
+          <ChatTopBar {...resolveChatInfo(room, user)}/>
         </ExpandableChatHeader>
       </div>
 
@@ -170,29 +179,55 @@ function ChatContent({roomId, user}: Readonly<{ roomId: string, user?: User }>) 
 }
 
 
-function ChatBottomBar({sendMessage}: Readonly<{ sendMessage: SendMessage }>) {
+const ChatBottomBar = ({sendMessage}: Readonly<{ sendMessage: SendMessage }>) => {
   const [message, setMessage] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  return <div className="bg-sidebar p-4 flex items-center space-x-2">
-    <ChatInput
-      value={message}
-      onChange={(e) => setMessage(e.target.value)}
-    />
-    <Button
-      onClick={() => {
-        sendMessage(message, ChatMessageType.TEXT).then();
-        setMessage("");
-      }}
-    >
-      Enviar
-      <SendHorizonal/>
-    </Button>
-  </div>
-}
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      sendMessage(file, ChatMessageType.IMAGE);
+    }
+  };
+
+  return (
+    <div className="bg-sidebar p-4 flex items-center space-x-2">
+      <ChatInput
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        placeholder="Escribe un mensaje..."
+      />
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/*"
+        className="hidden"
+      />
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <Image className="h-4 w-4"/>
+      </Button>
+      <Button
+        onClick={() => {
+          if (message.trim()) {
+            sendMessage(message, ChatMessageType.TEXT);
+            setMessage("");
+          }
+        }}
+      >
+        Enviar
+        <SendHorizontal className="ml-2 h-4 w-4"/>
+      </Button>
+    </div>
+  );
+};
 
 
 function ChatSidebar({roomId, user}: Readonly<{ roomId?: string, user: User }>) {
-
   return <Sidebar collapsible="icon">
     <SidebarHeader>
       <SidebarMenu>
@@ -227,8 +262,7 @@ function ChatSidebar({roomId, user}: Readonly<{ roomId?: string, user: User }>) 
 }
 
 function ChatSidebarContent({roomId, user}: Readonly<{ roomId?: string, user: User }>) {
-
-  const {rooms, loadingChat} = useChat();
+  const {rooms, loading} = useChat();
   const {toggleSidebar} = useSidebar();
   const isMobile = useIsMobile();
 
@@ -238,14 +272,14 @@ function ChatSidebarContent({roomId, user}: Readonly<{ roomId?: string, user: Us
         Conversaciones
       </SidebarGroupLabel>
       <SidebarMenu>
-        {loadingChat && <div>
+        {loading && <div>
           {[...Array(10).keys()].map((i) => <ChatRoomSckeleton key={i}/>)}
         </div>}
         {rooms.map((room) => {
 
           const {lastMessage} = room;
 
-          const hasRead = lastMessage.sentBy.id === user.id
+          const newMessage = lastMessage.sentBy.id === user.id
             || lastMessage
               .readBy
               .map(readBy => readBy.participant.id).includes(user.id);
@@ -266,7 +300,7 @@ function ChatSidebarContent({roomId, user}: Readonly<{ roomId?: string, user: Us
                   )}
                 >
                   <ChatPreviewMenu room={room}/>
-                  {hasRead ? <></> : <MessageCircleMore className="w-4 h-4"/>}
+                  {newMessage ? <MessageCircleMore className="w-4 h-4"/> : <></>}
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
@@ -303,14 +337,22 @@ function resolveChatInfo(room: Room, user?: User): { roomName: string, avatar?: 
 
 }
 
-interface ChatMessageListProps {
+interface ChatPreviewMenuProps {
   room: Room
 }
 
-function ChatPreviewMenu({room}: Readonly<ChatMessageListProps>) {
+function ChatPreviewMenu({room}: Readonly<ChatPreviewMenuProps>) {
 
   const {user} = useAuth();
   const {avatar, roomName, fallback} = resolveChatInfo(room, user);
+
+  const lastMessage = room.lastMessage;
+  const lastMessagePreview = {
+    [ChatMessageType.IMAGE]: "Imagen",
+    [ChatMessageType.VOICE]: "Audio",
+    [ChatMessageType.TEXT]: lastMessage.message,
+    [ChatMessageType.CUSTOM]: "..."
+  }[lastMessage.type];
 
   return <>
     <Avatar className="h-8 w-8 data-[state=close]:h-3 data-[state=close]:w-3">
@@ -321,7 +363,7 @@ function ChatPreviewMenu({room}: Readonly<ChatMessageListProps>) {
     </Avatar>
     <div className="grid flex-1 text-left text-sm leading-tight">
       <span className="truncate font-semibold">{roomName}</span>
-      <span className="truncate text-xs">{room.lastMessage.message}</span>
+      <span className="truncate text-xs">{lastMessagePreview}</span>
     </div>
   </>
 }

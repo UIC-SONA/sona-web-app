@@ -1,14 +1,13 @@
-import React, {
+import {
   createContext,
   useContext,
   useEffect,
   useState,
   useCallback,
-  useMemo
+  useMemo, PropsWithChildren
 } from 'react';
 import {
   Client,
-  IFrame,
   IMessage,
   StompSubscription,
   StompHeaders
@@ -25,8 +24,7 @@ interface StompContextType {
   contecting: boolean;
 }
 
-interface StompProviderProps {
-  children: React.ReactNode;
+interface StompProviderProps extends PropsWithChildren {
   url: string;
   options?: {
     connectHeaders?: StompHeaders;
@@ -46,6 +44,16 @@ export function StompProvider({children, url, options = {}}: Readonly<StompProvi
   const [error, setError] = useState<string | null>(null);
   const [contecting, setContecting] = useState(true);
 
+  const closeConecctionHandle = () => {
+    setContecting(false);
+    setConnected(false);
+  }
+
+  const setErrorHandle = (err: string) => {
+    setContecting(false);
+    setError(err);
+  }
+
   useEffect(() => {
     const stompClient = new Client({
       brokerURL: url,
@@ -60,18 +68,10 @@ export function StompProvider({children, url, options = {}}: Readonly<StompProvi
         setError(null);
         setConnected(true);
       },
-      onDisconnect: () => {
-        setContecting(false);
-        setConnected(false);
-      },
-      onStompError: (frame: IFrame) => {
-        setContecting(false);
-        setError(`STOMP Error: ${frame.body}`);
-      },
-      onWebSocketError: (event: Event) => {
-        setContecting(false);
-        setError(`WebSocket Error: ${event.type}`);
-      }
+      onDisconnect: closeConecctionHandle,
+      onWebSocketClose: closeConecctionHandle,
+      onStompError: (frame) => setErrorHandle(`STOMP Error: ${frame.body}`),
+      onWebSocketError: (event) => setErrorHandle(`WebSocket Error: ${event.type}`)
     });
 
     setClient(stompClient);
@@ -130,16 +130,3 @@ export const useStomp = () => {
   }
   return context;
 };
-
-// export const useStompSubscription = (destination: string, callback: (message: IMessage) => void) => {
-//   const {subscribe, unsubscribe} = useStomp();
-//
-//   useEffect(() => {
-//     const subscription = subscribe(destination, callback);
-//     return () => {
-//       if (subscription) {
-//         unsubscribe(subscription);
-//       }
-//     };
-//   }, [destination, callback, subscribe, unsubscribe]);
-// };

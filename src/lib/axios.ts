@@ -3,13 +3,11 @@ import {
   isAccessToken,
   updateAndLoadAccessToken
 } from "@/services/auth-service.ts";
+import {API_URL} from "@/constans.ts";
 
-const apiUrl = import.meta.env.VITE_API_URL as string;
-
-console.log(apiUrl)
 
 const apiClient = axios.create({
-  baseURL: apiUrl
+  baseURL: API_URL
 });
 
 apiClient.interceptors.request.use(

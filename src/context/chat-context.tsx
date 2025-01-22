@@ -17,7 +17,7 @@ import {
   useState
 } from "react";
 import {
-  User,
+  User, Users,
   userService
 } from "@/services/user-service.ts";
 
@@ -42,12 +42,16 @@ export interface Room extends Omit<ChatRoom, 'participants'> {
   participants: User[];
 }
 
-type RoomChunkState = {
+interface RoomChunkState {
   current: number; // Último chunk cargado (inicia desde el total y decrece)
   total: number;   // Total de chunks disponibles
-};
+}
 
-const parseReadBy = (readBy: ReadBy, users: { [key: number]: User }): { participant: User, readAt: Date } => {
+interface RoomData<T> {
+  [roomId: string]: T | undefined;
+}
+
+const parseReadBy = (readBy: ReadBy, users: Users): { participant: User, readAt: Date } => {
   return {
     participant: users[readBy.participantId],
     readAt: readBy.readAt
@@ -58,11 +62,12 @@ type SendRoomMessage = (roomId: string, message: string | File, type: ChatMessag
 type ReadRoomMessages = (roomId: string) => Promise<void>;
 
 interface ChatContextType {
-  loadingChat: boolean;
+  loading: boolean;
   rooms: Room[];
-  users: { [key: number]: User };
-  messages: { [roomId: string]: Message[] };
+  users: Users;
+  messages: RoomData<Message[]>;
   loadMessages: (roomId: string) => Promise<void>;
+  loadingMessages: RoomData<boolean>;
   sendMessage: SendRoomMessage;
   readMessages: ReadRoomMessages;
 }
@@ -71,14 +76,13 @@ export const ChatContext = createContext<ChatContextType | undefined>(undefined)
 
 export function ChatProvider({children, user}: Readonly<PropsWithChildren & { user: User }>) {
 
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [users, setUsers] = useState<{ [key: number]: User }>({});
-  const [messages, setMessages] = useState<{ [roomId: string]: Message[] }>({});
   const [loading, setLoading] = useState(true);
-  const [chunkState, setChunkState] = useState<{ [roomId: string]: RoomChunkState }>({});
-  const [loadingRooms, setLoadingRooms] = useState<{ [roomId: string]: boolean }>({});
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [users, setUsers] = useState<Users>({});
+  const [messages, setMessages] = useState<RoomData<Message[]>>({});
+  const [chunkState, setChunkState] = useState<RoomData<RoomChunkState>>({});
+  const [loadingMessages, setLoadingMessages] = useState<RoomData<boolean>>({});
   const [requestIds, setRequestIds] = useState<string[]>([]);
-
 
   const loadChat = async () => {
     setLoading(true);
@@ -115,21 +119,22 @@ export function ChatProvider({children, user}: Readonly<PropsWithChildren & { us
   };
 
 
-  const setLoadingMessages = (roomId: string, loading: boolean) => {
-    setLoadingRooms(prev => ({...prev, [roomId]: loading}));
+  const setLoadingMessagesRoom = (roomId: string, loading: boolean) => {
+    setLoadingMessages(prev => ({...prev, [roomId]: loading}));
   }
 
   const loadMessages = async (roomId: string) => {
-    if (loadingRooms[roomId]) return;
+    // Si ya se está cargando retorna
+    if (loadingMessages[roomId]) return;
 
-    setLoadingMessages(roomId, true);
+    setLoadingMessagesRoom(roomId, true);
 
     try {
       // Verificar o inicializar el estado de los chunks
       let roomChunk = chunkState[roomId];
       if (!roomChunk) {
         const totalChunks = await chatService.chunkCount(roomId); // Obtener total
-        roomChunk = {current: totalChunks, total: totalChunks};
+        roomChunk = {current: totalChunks, total: totalChunks,};
         setChunkState(prev => ({...prev, [roomId]: roomChunk}));
       }
 
@@ -151,23 +156,32 @@ export function ChatProvider({children, user}: Readonly<PropsWithChildren & { us
       });
 
       // Actualizar mensajes y estado del chunk
-      setMessages(prev => ({
-        ...prev,
-        [roomId]: [...roomMessages, ...(prev[roomId] || [])], // Agregar al inicio
-      }));
+      setMessages(prev => {
+        const prevMessages = prev[roomId] || [];
+        return ({
+          ...prev,
+          [roomId]: [...roomMessages, ...prevMessages], // Agregar al inicio
+        });
+      });
 
-      setChunkState(prev => ({
-        ...prev,
-        [roomId]: {
-          ...prev[roomId],
-          current: prev[roomId]?.current - 1, // Decrementar chunk actual
-        },
-      }));
+      // Decrementar chunk actual
+      setChunkState(prev => {
+        const roomChunk = prev[roomId];
+        if (!roomChunk) return prev;
+
+        return ({
+          ...prev,
+          [roomId]: {
+            ...roomChunk,
+            current: roomChunk.current - 1
+          },
+        });
+      });
 
     } catch (error) {
       console.error(`Error al cargar mensajes para la sala ${roomId}:`, error);
     } finally {
-      setLoadingMessages(roomId, false);
+      setLoadingMessagesRoom(roomId, false);
     }
   };
 
@@ -186,10 +200,13 @@ export function ChatProvider({children, user}: Readonly<PropsWithChildren & { us
     if (requestIds.includes(requestId)) {
       setRequestIds(prev => prev.filter(id => id !== requestId));
     } else {
-      setMessages(prev => ({
-        ...prev,
-        [roomId]: [...(prev[roomId] || []), received]
-      }));
+      setMessages(prev => {
+        const roomMessages = prev[roomId] || [];
+        return ({
+          ...prev,
+          [roomId]: [...roomMessages, received]
+        });
+      });
     }
 
     setRooms(prev => prev.map(room => {
@@ -203,26 +220,33 @@ export function ChatProvider({children, user}: Readonly<PropsWithChildren & { us
   });
 
   useReadMessage(user.id, ({roomId, readBy, messageIds}) => {
+    // console.log("Message has read:", messageIds);
     setMessages(prev => ({
       ...prev,
-      [roomId]: prev[roomId].map(message => {
+      [roomId]: prev[roomId]?.map(message => {
         if (!messageIds.includes(message.id)) {
           return message;
         }
         return {
           ...message,
-          readBy: [...message.readBy, parseReadBy(readBy, users)]
+          readBy: [
+            ...message.readBy, parseReadBy(readBy, users)
+          ]
         };
       })
     }));
 
     setRooms(prev => prev.map(room => {
       if (room.id !== roomId) return room;
+      const lastMessage = room.lastMessage;
       return {
         ...room,
         lastMessage: {
-          ...room.lastMessage,
-          readBy: [...room.lastMessage.readBy, parseReadBy(readBy, users)]
+          ...lastMessage,
+          readBy: [
+            ...lastMessage.readBy,
+            parseReadBy(readBy, users)
+          ]
         }
       };
     }));
@@ -247,11 +271,13 @@ export function ChatProvider({children, user}: Readonly<PropsWithChildren & { us
       status: StatusMessage.SENDING
     };
 
-    setMessages(prev => ({
-      ...prev,
-      [roomId]: [...(prev[roomId] || []), messageToSent]
-    }));
-
+    setMessages(prev => {
+      const roomMessages = prev[roomId] || [];
+      return ({
+        ...prev,
+        [roomId]: [...roomMessages, messageToSent]
+      });
+    });
 
     try {
 
@@ -277,7 +303,7 @@ export function ChatProvider({children, user}: Readonly<PropsWithChildren & { us
 
       setMessages(prev => ({
         ...prev,
-        [roomId]: prev[roomId].map(message => {
+        [roomId]: prev[roomId]?.map(message => {
           if (message !== messageToSent) return message;
           return sentMessage;
         })
@@ -287,7 +313,7 @@ export function ChatProvider({children, user}: Readonly<PropsWithChildren & { us
       console.error('Error sending message:', error);
       setMessages(prev => ({
         ...prev,
-        [roomId]: prev[roomId].map(message => {
+        [roomId]: prev[roomId]?.map(message => {
           if (message !== messageToSent) return message;
 
           return message === messageToSent ? {
@@ -314,22 +340,24 @@ export function ChatProvider({children, user}: Readonly<PropsWithChildren & { us
     }
 
     if (unreads.length > 0) {
+      console.log("Read messages: ", unreads);
       await chatService.readMessages({roomId, messageIds: unreads});
     }
   }
 
   useEffect(() => {
-    loadChat().then();
+    loadChat();
   }, []);
 
   const value = useMemo(() => ({
     rooms,
     users,
     messages,
-    loadingChat: loading,
+    loading,
     loadMessages,
     sendMessage,
     readMessages,
+    loadingMessages
   }), [rooms, users, messages, loading]);
 
 
@@ -350,39 +378,49 @@ export function useChat(): ChatContextType {
 export type SendMessage = (message: string | File, type: ChatMessageType) => Promise<void>;
 
 interface UseChatRoomReturn {
-  room: Room;
+  loading: boolean;
+  room?: Room;
   messages: Message[];
   loadingMessages: boolean;
   sendMessage: SendMessage;
-  readMessages: () => Promise<void>;
 }
 
 export function useChatRoom(roomId: string): UseChatRoomReturn {
-  const {rooms, messages, sendMessage, loadMessages, loadingChat, readMessages} = useChat();
-  const [loading, setLoading] = useState(true);
+  //
+  const {
+    rooms,
+    messages,
+    sendMessage,
+    loadMessages,
+    loading,
+    readMessages,
+    loadingMessages
+  } = useChat();
 
-  const room = rooms.find(room => room.id === roomId) as Room;
-  const roomMessages = messages[roomId] || [];
-
+  const room = useMemo(() => rooms.find(room => room.id === roomId), [rooms, roomId]);
+  const chatMessages = messages[roomId] || [];
+  const loadingChatMessages = loadingMessages[roomId];
 
   useEffect(() => {
-    if (loadingChat) return;
-    loadMessages(roomId).finally(() => setLoading(false));
-  }, [roomId, loadingChat]);
+    if (loading) return;
+    loadMessages(roomId);
+  }, [roomId, loading]);
 
   const sendChatMessage = async (message: string | File, type: ChatMessageType) => {
     await sendMessage(roomId, message, type);
   }
-  const readChatMessages = async () => {
-    await readMessages(roomId);
-  }
+
+  useEffect(() => {
+    if (loadingChatMessages || chatMessages.length === 0) return;
+    readMessages(roomId);
+  }, [roomId, loadingMessages, messages]);
 
   return {
+    loading,
     room,
-    messages: roomMessages,
-    loadingMessages: loading,
+    messages: chatMessages,
+    loadingMessages: loadingChatMessages ?? true,
     sendMessage: sendChatMessage,
-    readMessages: readChatMessages
   };
 }
 

@@ -48,6 +48,10 @@ export interface UserFilter {
   authorities: Authority[];
 }
 
+export interface Users {
+  [userId: number]: User;
+}
+
 
 async function singUp(signUp: SingUp): Promise<Message> {
   const response = await apiClient.post<Message>(
@@ -122,8 +126,8 @@ async function enable(id: number, enabled: boolean): Promise<Message> {
   return response.data;
 }
 
-async function mapUsers(ids: number[]): Promise<{ [key: number]: User }> {
-  const response = await apiClient.get<{ [key: number]: User }>(
+async function mapUsers(ids: number[]): Promise<Users> {
+  const response = await apiClient.get<Users>(
     `${resource}/map`,
     {
       params: {

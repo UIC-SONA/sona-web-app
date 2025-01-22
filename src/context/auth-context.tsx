@@ -79,7 +79,7 @@ export default function AuthProvider({children}: Readonly<PropsWithChildren>) {
       }
     }
 
-    initialize().then();
+    initialize();
   }, []);
 
   const logoutUser = useCallback(async () => {
@@ -94,7 +94,7 @@ export default function AuthProvider({children}: Readonly<PropsWithChildren>) {
 
   const clearError = useCallback(() => setError(undefined), []);
 
-  const value = useMemo(() => ({
+  const value: AuthContextState = useMemo(() => ({
     logoutUser,
     initializing,
     error,

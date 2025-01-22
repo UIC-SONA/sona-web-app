@@ -1,34 +1,13 @@
-import {
-  Message,
-  StatusMessage
-} from "@/context/chat-context.tsx";
-import {
-  User,
-  userService
-} from "@/services/user-service.ts";
-import {
-  ChatMessageList
-} from "@/components/chat/chat-message-list.tsx";
-import {
-  AnimatePresence
-} from "framer-motion";
-import {
-  ChatBubble,
-  ChatBubbleAvatar,
-  ChatBubbleMessage,
-  ChatBubbleTimestamp
-} from "@/components/chat/chat-bubble.tsx";
-import {
-  format,
-  isToday,
-  isYesterday
-} from "date-fns";
+import {Message, StatusMessage} from "@/context/chat-context.tsx";
+import {User, userService} from "@/services/user-service.ts";
+import {ChatMessageList} from "@/components/chat/chat-message-list.tsx";
+import {ChatBubble, ChatBubbleAvatar, ChatBubbleMessage, ChatBubbleTimestamp} from "@/components/chat/chat-bubble.tsx";
+import {format, isToday, isYesterday} from "date-fns";
 import {es} from 'date-fns/locale';
-import {
-  Check, CheckCheck,
-  CircleX,
-  Clock
-} from "lucide-react";
+import {Check, CheckCheck, CircleX, Clock} from "lucide-react";
+import {ChatMessageType} from "@/services/chat-service.ts";
+import {API_URL} from "@/constans.ts";
+import {buildUrl} from "@/lib/utils.ts";
 
 interface ChatListProps {
   messages: Message[];
@@ -39,43 +18,72 @@ interface ChatListProps {
 export default function ChatMessageListGenerator({messages, participans, isMe}: Readonly<ChatListProps>) {
   return <div className="w-full overflow-y-hidden h-full flex flex-col">
     <ChatMessageList>
-      <AnimatePresence>
-        {messages.map((message, index) => {
+      {messages.map((message, index) => {
 
-          const variant = isMe(message.sentBy.id) ? "sent" : "received";
-          const otherParticipants = participans.filter(participant => !isMe(participant.id));
-          const hasRead = message.readBy.length === otherParticipants.length;
+        const variant = isMe(message.sentBy.id) ? "sent" : "received";
+        const otherParticipants = participans.filter(participant => !isMe(participant.id));
+        const hasRead = message.readBy.length === otherParticipants.length;
 
-          return <ChatBubble
-            key={"Chat-" + index}
+        return <ChatBubble
+          key={"Chat-" + index}
+          variant={variant}
+        >
+          {message.sentBy.hasProfilePicture && <ChatBubbleAvatar
+              className="font-bold"
+              src={userService.profilePicturePath(message.sentBy.id)}
+              fallback={message.sentBy.firstName[0].toUpperCase() || "D"}
+          />}
+
+          <ChatBubbleMessage
             variant={variant}
+            className="p-2 text-sm"
           >
-            {message.sentBy.hasProfilePicture && <ChatBubbleAvatar
-                className="font-bold"
-                src={userService.profilePicturePath(message.sentBy.id)}
-                fallback={message.sentBy.firstName[0].toUpperCase() || "D"}
-            />}
 
-            <ChatBubbleMessage
-              variant={variant}
-              className="p-2 text-sm"
-            >
-              {message.message}
-              <div className="flex items-center justify-between space-x-2 mt-2">
-                <ChatBubbleTimestamp
-                  timestamp={getFormattedTime(message.createdAt)}
-                />
-                <ChatBubbleStatus
-                  hasRead={hasRead}
-                  status={message.status}
-                />
-              </div>
-            </ChatBubbleMessage>
-          </ChatBubble>
-        })}
-      </AnimatePresence>
+            <BuildChatMessage message={message}/>
+
+            <div className="flex items-center justify-between space-x-2 mt-2">
+              <ChatBubbleTimestamp
+                timestamp={getFormattedTime(message.createdAt)}
+              />
+
+              <ChatBubbleStatus
+                hasRead={hasRead}
+                status={message.status}
+              />
+            </div>
+
+          </ChatBubbleMessage>
+        </ChatBubble>
+      })}
     </ChatMessageList>
   </div>;
+}
+
+interface BuildChatMessageProps {
+  message: Message,
+}
+
+function BuildChatMessage({message}: Readonly<BuildChatMessageProps>) {
+  if (message.type === ChatMessageType.TEXT) {
+    return message.message;
+  }
+
+  if (message.type === ChatMessageType.IMAGE) {
+
+    const uri = buildUrl(API_URL, `/chat/resource`, {
+      id: message.message,
+    });
+
+    return (
+      <div className="relative w-64 h-64">
+        <img
+          src={uri}
+          className="object-contain rounded-lg w-full h-full"
+          alt="..."
+        />
+      </div>
+    );
+  }
 }
 
 
@@ -118,4 +126,4 @@ function getFormattedTime(date: Date) {
   }
 
   return format(date, 'dd/MM/yyyy h:mm a', {locale: es});
-};
+}

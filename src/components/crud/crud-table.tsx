@@ -425,7 +425,7 @@ export function CrudOperationsTable<
                     </div>
                 </TableCell>
             </TableRow>}
-            {table.getRowModel().rows.length ? (
+            {!loading && table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => {
                 return <TableRow
                   key={row.id}

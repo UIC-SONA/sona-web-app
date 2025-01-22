@@ -172,20 +172,19 @@ export enum RefreshTokenBadResult {
 
 export async function updateAndLoadAccessToken(): Promise<AccessToken | RefreshTokenBadResult> {
   const storedToken = loadAccessToken();
-  if (storedToken) {
-    if (!isExpired(storedToken)) {
-      return storedToken;
-    }
-    if (canRefresh(storedToken)) {
-      const refreshedToken = await refresh(storedToken);
-      saveAccessToken(refreshedToken);
-      return refreshedToken;
-    } else {
-      clearAccessToken();
-      return RefreshTokenBadResult.EXPIRED_TOKEN;
-    }
+  if (!storedToken) return RefreshTokenBadResult.NO_TOKEN;
+
+  if (!isExpired(storedToken)) {
+    return storedToken;
   }
-  return RefreshTokenBadResult.NO_TOKEN;
+  if (canRefresh(storedToken)) {
+    const refreshedToken = await refresh(storedToken);
+    saveAccessToken(refreshedToken);
+    return refreshedToken;
+  } else {
+    clearAccessToken();
+    return RefreshTokenBadResult.EXPIRED_TOKEN;
+  }
 }
 
 export function loadAccessToken(): AccessToken | null {

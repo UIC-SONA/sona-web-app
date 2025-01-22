@@ -1,13 +1,39 @@
-import {Message, StatusMessage} from "@/context/chat-context.tsx";
-import {User, userService} from "@/services/user-service.ts";
+import {
+  Message,
+  StatusMessage
+} from "@/context/chat-context.tsx";
+import {
+  User,
+  userService
+} from "@/services/user-service.ts";
 import {ChatMessageList} from "@/components/chat/chat-message-list.tsx";
-import {ChatBubble, ChatBubbleAvatar, ChatBubbleMessage, ChatBubbleTimestamp} from "@/components/chat/chat-bubble.tsx";
-import {format, isToday, isYesterday} from "date-fns";
+import {
+  ChatBubble,
+  ChatBubbleAvatar,
+  ChatBubbleMessage,
+  ChatBubbleTimestamp
+} from "@/components/chat/chat-bubble.tsx";
+import {
+  format,
+  isToday,
+  isYesterday
+} from "date-fns";
 import {es} from 'date-fns/locale';
-import {Check, CheckCheck, CircleX, Clock} from "lucide-react";
+import {
+  Check,
+  CheckCheck,
+  CircleX,
+  Clock
+} from "lucide-react";
 import {ChatMessageType} from "@/services/chat-service.ts";
 import {API_URL} from "@/constans.ts";
 import {buildUrl} from "@/lib/utils.ts";
+import {useState} from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger
+} from "@/components/ui/dialog.tsx";
 
 interface ChatListProps {
   messages: Message[];
@@ -74,18 +100,47 @@ function BuildChatMessage({message}: Readonly<BuildChatMessageProps>) {
       id: message.message,
     });
 
-    return (
-      <div className="relative w-64 h-64">
-        <img
-          src={uri}
-          className="object-contain rounded-lg w-full h-full"
-          alt="..."
-        />
-      </div>
-    );
+    return <ImageWithDialog src={uri}/>;
   }
 }
 
+interface ImageWithDialogProps {
+  src: string;
+}
+
+function ImageWithDialog({src}: Readonly<ImageWithDialogProps>) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleDialog = () => setIsOpen(!isOpen);
+
+  return (
+    <>
+      {/* Trigger para abrir el diálogo */}
+      <Dialog open={isOpen} onOpenChange={toggleDialog}>
+        <DialogTrigger asChild>
+          <div className="relative w-64 h-64 cursor-pointer">
+            <img
+              src={src}
+              className="object-contain rounded-lg w-full h-full"
+              alt="Preview"
+            />
+          </div>
+        </DialogTrigger>
+
+        {/* Dialog Content */}
+        <DialogContent className="height-90vh">
+          <div className="flex justify-center py-4">
+            <img
+              src={src}
+              className="object-contain rounded-lg w-full h-full"
+              alt="Full View"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
 function ChatBubbleStatus({status, hasRead}: Readonly<{ status: StatusMessage, hasRead: boolean }>) {
   if (hasRead) {

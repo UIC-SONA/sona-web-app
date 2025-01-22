@@ -228,6 +228,7 @@ export default function ProfessionalSchedulePage() {
             calendarRef={calendarRef}
           />
         </div>
+
         <Card className="h-[500px] overflow-y-scroll p-3 mt-4">
           <FullCalendarImproved
             locale={es}
@@ -264,6 +265,7 @@ export default function ProfessionalSchedulePage() {
           oldSchedule={oldSchedule}
           updateSchedule={updateSchedule}
         />
+
         <DeleteScheduleForm
           open={deleteOpen}
           setOpen={setDeleteOpen}
@@ -271,6 +273,7 @@ export default function ProfessionalSchedulePage() {
           removeSchedule={removeSchedule}
           setScheduleViewOpen={setScheduleViewOpen}
         />
+
       </div>
     </BreadcrumbSubLayout>
   );

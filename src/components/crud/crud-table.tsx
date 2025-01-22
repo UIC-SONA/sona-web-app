@@ -163,8 +163,8 @@ export function CrudOperationsTable<
   }: Readonly<CrudOperationsTableProp<TData, Dto, ID, E>>
 ) {
 
-  const {pushAlertDialog} = useAlertDialog();
   const isFirstRender = useIsFirstRender();
+  const {pushAlertDialog} = useAlertDialog();
 
   const [data, setData] = useState<TData[]>([]);
   const [pagination, setPagination] = useState<PaginationState>({pageIndex: 0, pageSize: 20});
@@ -320,10 +320,12 @@ export function CrudOperationsTable<
 
   const clearFilters = () => {
     if (Object.keys(filters).length === 0) return;
+    setLoadingFilters(true);
     setFilters({});
   }
 
   const setFilter = (key: keyof E, value?: E[keyof E]) => {
+    setLoadingFilters(true);
     setFilters((prev) => ({...prev, [key]: value}));
   }
 

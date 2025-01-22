@@ -1,6 +1,5 @@
 import {
   BadgeCheck,
-  Bell,
   ChevronsUpDown,
   LogOut,
   MessageSquare,
@@ -26,7 +25,10 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import {User, userService} from "@/services/user-service.ts";
+import {
+  User,
+  userService
+} from "@/services/user-service.ts";
 import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
 import {Link} from "react-router";
@@ -80,12 +82,6 @@ export function NavUser({user}: Readonly<NavUserProps>) {
               <BadgeCheck/>
               Perfil
             </DropdownMenuItem>
-            <Link to="/notifications">
-              <DropdownMenuItem>
-                <Bell/>
-                Notificaciones
-              </DropdownMenuItem>
-            </Link>
             <Link to="/chat">
               <DropdownMenuItem>
                 <MessageSquare/>

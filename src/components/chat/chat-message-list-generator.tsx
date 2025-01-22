@@ -114,33 +114,30 @@ function ImageWithDialog({src}: Readonly<ImageWithDialogProps>) {
   const toggleDialog = () => setIsOpen(!isOpen);
 
   return (
-    <>
-      {/* Trigger para abrir el diálogo */}
-      <Dialog open={isOpen} onOpenChange={toggleDialog}>
-        <DialogTrigger asChild>
-          <div className="relative w-64 h-64 cursor-pointer">
-            <img
-              src={src}
-              className="object-contain rounded-lg w-full h-full"
-              alt="Preview"
-            />
-          </div>
-        </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={toggleDialog}>
+      <DialogTrigger asChild>
+        <div className="relative w-64 h-64 cursor-pointer">
+          <img
+            src={src}
+            className="object-contain rounded-lg w-full h-full"
+            alt="Preview"
+          />
+        </div>
+      </DialogTrigger>
 
-        {/* Dialog Content */}
-        <DialogContent className="height-90vh">
-          <div className="flex justify-center py-4">
-            <img
-              src={src}
-              className="object-contain rounded-lg w-full h-full"
-              alt="Full View"
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+      <DialogContent className="w-[90vw] h-[90vh] p-5 overflow-hidden flex items-center justify-center">
+        <div className="relative w-full h-full">
+          <img
+            src={src}
+            className="object-contain w-full h-full"
+            alt="Full View"
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
+
 
 function ChatBubbleStatus({status, hasRead}: Readonly<{ status: StatusMessage, hasRead: boolean }>) {
   if (hasRead) {

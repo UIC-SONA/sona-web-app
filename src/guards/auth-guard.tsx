@@ -63,7 +63,7 @@ export default function AuthGuard({hasAuthenticated = false, redirect, hasAuthor
         }
       });
     }
-  }, [error]);
+  }, [error]);1
 
   if (initializing) {
     return <div className="w-screen h-screen flex items-center justify-center flex-col">

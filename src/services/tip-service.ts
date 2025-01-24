@@ -11,6 +11,9 @@ export interface Tip {
   tags: string[];
   image: string;
   active: boolean;
+  myRate?: number;
+  averageRate: number;
+  totalRate: number;
 }
 
 export interface TipDto {
@@ -41,6 +44,12 @@ async function deleteImage(id: string): Promise<Message> {
     `${resource}/${id}/image`,
   );
 
+  return response.data;
+}
+
+
+async function topTips(): Promise<Tip[]> {
+  const response = await apiClient.get<Tip[]>(`${resource}/top`);
   return response.data;
 }
 
@@ -77,4 +86,5 @@ export const tipsService = {
   ...crudOperations,
   getImage,
   deleteImage,
+  topTips,
 };

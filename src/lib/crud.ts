@@ -34,8 +34,8 @@ export type Direction = "asc" | "desc";
 
 export type PageQuery<F = {}> = {
   search?: string;
-  page: number;
-  size: number;
+  page?: number;
+  size?: number;
   sorts?: Sort[];
   filters?: Partial<F>;
 };

@@ -55,6 +55,16 @@ export default function ForumPage() {
         },
       },
       {
+        header: "Comentarios",
+        accessorKey: "comments",
+        enableSorting: true,
+        cell: ({row}) => {
+          return <div className="flex items-center justify-center">
+            {row.original.comments.length}
+          </div>
+        },
+      },
+      {
         header: "Denuncias",
         accessorKey: "reportedBy",
         enableSorting: true,

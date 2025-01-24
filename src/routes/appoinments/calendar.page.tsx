@@ -59,9 +59,7 @@ export default function AppointmentsCalendarPage() {
   const loadAppointments = async () => {
     setLoading(true);
     try {
-      const appointments = await appointmentsService.page({
-        page: 0,
-        size: 0,
+      const appointments = await appointmentsService.list({
         filters: {
           from: range.from,
           to: range.to,
@@ -70,7 +68,7 @@ export default function AppointmentsCalendarPage() {
           type: type,
         }
       });
-      setAppointments(appointments.content);
+      setAppointments(appointments);
     } finally {
       setLoading(false);
     }

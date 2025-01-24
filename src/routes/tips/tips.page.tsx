@@ -77,14 +77,6 @@ export default function TipsPage() {
         }
       },
       {
-        header: "Imagen",
-        accessorKey: "image",
-        enableSorting: false,
-        cell: ({row}) => {
-          return <OpenImageModal fetcher={() => tipsService.getImage(row.original.id)} alt={row.original.title}/>
-        },
-      },
-      {
         header: "Activo",
         accessorKey: "active",
         enableSorting: true,
@@ -92,6 +84,30 @@ export default function TipsPage() {
           return <div className="flex items-center justify-center">
             <Checkbox checked={row.original.active} disabled/>
           </div>
+        },
+      },
+      {
+        header: "Calificación",
+        accessorKey: "averageRate",
+        enableSorting: false,
+        cell: ({row}) => {
+          return row.original.averageRate.toFixed(2);
+        }
+      },
+      {
+        header: "Calificaciones",
+        accessorKey: "totalRate",
+        enableSorting: false,
+        cell: ({row}) => {
+          return row.original.totalRate;
+        }
+      },
+      {
+        header: "Imagen",
+        accessorKey: "image",
+        enableSorting: false,
+        cell: ({row}) => {
+          return <OpenImageModal fetcher={() => tipsService.getImage(row.original.id)} alt={row.original.title}/>
         },
       },
     ],

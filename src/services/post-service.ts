@@ -28,6 +28,11 @@ export interface Comment extends ByAuthor<number> {
   createdAt: Date;
 }
 
+export interface TopPostsDto {
+  mostLikedPost: Post | null;
+  mostCommentedPost: Post | null;
+}
+
 export interface PostDto {
   anonymous: boolean | undefined;
   content: string;
@@ -44,6 +49,14 @@ function modelTransformer(model: any): Post {
   };
 }
 
+async function topPosts(): Promise<TopPostsDto> {
+  const response = await apiClient.get<any>(`${resource}/top`);
+  const data = response.data;
+  const mostLikedPost = data.mostLikedPost ? modelTransformer(data.mostLikedPost) : null;
+  const mostCommentedPost = data.mostCommentedPost ? modelTransformer(data.mostCommentedPost) : null;
+  return {mostLikedPost, mostCommentedPost};
+}
+
 const pageable = restPageable<Post>(apiClient, resource, {modelTransformer});
 const findable = restFindable<Post, string>(apiClient, resource, {modelTransformer});
 const deletable = restDeleteable<string>(apiClient, resource);
@@ -52,4 +65,5 @@ export const postService = {
   ...pageable,
   ...findable,
   ...deletable,
+  topPosts,
 }

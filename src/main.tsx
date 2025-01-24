@@ -11,7 +11,7 @@ import MainLayout from "@/layout/main-layout.tsx";
 import {AlertDialogProvider} from "@/context/alert-dialog-context.tsx";
 import {Toaster} from "@/components/ui/toaster.tsx";
 import AuthGuard from "@/guards/auth-guard.tsx";
-import App from "@/routes/app.tsx";
+import Dashboard from "@/routes/dashboard.tsx";
 import UserPage from "@/routes/users/index.page.tsx";
 import TipsPage from "@/routes/tips/tips.page.tsx";
 import ForumPage from "@/routes/posts/index.page.tsx";
@@ -44,7 +44,7 @@ function SonaRoutes() {
   return <Routes>
     <Route element={<AuthGuard hasAuthenticated redirect="/auth/login"/>}>
       <Route element={<MainLayout/>}>
-        <Route index element={<App/>}/>
+        <Route index element={<Dashboard/>}/>
         <Route element={<AuthGuard hasAuthorized={userService.hasPrivilegedUser} redirect="/"/>}>
           <Route path="users" element={<UserPage/>}/>
           <Route path="tips" element={<TipsPage/>}/>

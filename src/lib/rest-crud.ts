@@ -58,8 +58,14 @@ export function pageQueryToParams<F = {}>(query: PageQuery<F>, filtersTransforme
   const {page, size, search, sorts, filters} = query;
 
   const params = new URLSearchParams();
-  params.append("page", page.toString());
-  params.append("size", size.toString());
+
+  if (page) {
+    params.append("page", page.toString());
+  }
+
+  if (size) {
+    params.append("size", size.toString());
+  }
 
   if (search) {
     params.append("search", search);
@@ -93,15 +99,15 @@ function defaultFiltersTransformer<F = {}>(filters: Partial<F>): URLSearchParams
 
   for (const key of Object.keys(filters)) {
     const value = (filters as any)[key];
-    if (value) {
-
-      if (Array.isArray(value)) {
-        for (const item of value) {
-          params.append(key, item.toString());
-        }
-      } else {
-        params.append(key, value.toString());
+    if (value === undefined || value === null) {
+      continue;
+    }
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        params.append(key, item.toString());
       }
+    } else {
+      params.append(key, value.toString());
     }
   }
 

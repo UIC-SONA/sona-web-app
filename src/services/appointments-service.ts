@@ -1,6 +1,6 @@
-import {Entity} from "@/lib/crud.ts";
-import {User} from "@/services/user-service.ts";
-import {restRead} from "@/lib/rest-crud.ts";
+import {Entity, PageQuery} from "@/lib/crud.ts";
+import {Authority, User} from "@/services/user-service.ts";
+import {pageQueryToParams, restRead} from "@/lib/rest-crud.ts";
 import apiClient from "@/lib/axios.ts";
 import {format} from "date-fns";
 
@@ -19,6 +19,7 @@ export interface Appointment extends Entity<number> {
 
 export interface AppointmentFilters {
   professionalId: number;
+  professionalType: Authority.MEDICAL_PROFESSIONAL | Authority.LEGAL_PROFESSIONAL;
   userId: number;
   canceled: boolean;
   type: AppointmentType;
@@ -35,8 +36,6 @@ export interface AppointmentsRange {
   from: Date;
   to: Date;
 }
-
-
 
 async function getAppointmentsRangesByProfessional(professionalId: number, from: Date, to: Date): Promise<AppointmentsRange[]> {
   const response = await apiClient.get<AppointmentsRange[]>(
@@ -69,6 +68,7 @@ function filtersTransformer(filters: Partial<AppointmentFilters>): URLSearchPara
   if (filters.type) params.append('type', filters.type);
   if (filters.from) params.append('from', format(filters.from, 'yyyy-MM-dd'));
   if (filters.to) params.append('to', format(filters.to, 'yyyy-MM-dd'));
+  if (filters.professionalType) params.append('professionalType', filters.professionalType);
   return params;
 }
 
@@ -83,6 +83,13 @@ function modelTransformer(appointment: any): Appointment {
   };
 }
 
+async function list(query: Omit<PageQuery<AppointmentFilters>, "page" | "size">): Promise<Appointment[]> {
+  const response = await apiClient.get<any[]>(`${resource}/list`, {
+    params: pageQueryToParams(query, filtersTransformer),
+  });
+
+  return response.data.map(modelTransformer);
+}
 
 const readOperations = restRead<Appointment, number, AppointmentFilters>(apiClient, resource, {
   filtersTransformer,
@@ -91,6 +98,7 @@ const readOperations = restRead<Appointment, number, AppointmentFilters>(apiClie
 
 export const appointmentsService = {
   ...readOperations,
+  list,
   getAppointmentsRangesByProfessional,
   getAppointmentTypeName,
 }

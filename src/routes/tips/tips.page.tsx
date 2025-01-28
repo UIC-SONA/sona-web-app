@@ -5,7 +5,7 @@ import {
 } from "@/services/tip-service.ts";
 import {Checkbox} from "@/components/ui/checkbox.tsx";
 import {
-  ClickToShowUUID,
+  ClickToShowID,
   ItemsOnRounded,
   LoadingImage,
   OpenImageModal,
@@ -44,7 +44,7 @@ export default function TipsPage() {
         accessorKey: "id",
         enableSorting: true,
         cell: ({row}) => {
-          return <ClickToShowUUID id={row.original.id}/>
+          return <ClickToShowID id={row.original.id}/>
         }
       },
       {

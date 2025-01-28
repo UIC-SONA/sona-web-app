@@ -1,8 +1,7 @@
 import BreadcrumbSubLayout from "@/layout/breadcrumb-sub-layout.tsx";
 import CrudTable, {TableFactory} from "@/components/crud/crud-table.tsx";
 import {
-  Post,
-  PostDto,
+  Comment,
   postService
 } from "@/services/post-service.ts";
 import {
@@ -11,16 +10,17 @@ import {
 } from "@/components/utils-componentes.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
 import {format} from "date-fns";
-import {useNavigate} from "react-router";
-import {MessageSquareText} from "lucide-react";
+import {Link, useParams} from "react-router";
+import {Button} from "@/components/ui/button.tsx";
+import {ChevronLeft} from "lucide-react";
 
 
-export default function PostPage() {
+export default function CommentsPage() {
   const {authenticated} = useAuth();
-  const navigation = useNavigate();
-  if (!authenticated) return null;
+  const {postId} = useParams();
+  if (!authenticated || !postId) return null;
 
-  const table: TableFactory<Post, string> = {
+  const table: TableFactory<Comment, string> = {
     columns: [
       {
         header: "Id",
@@ -36,7 +36,7 @@ export default function PostPage() {
         enableSorting: true,
         cell: ({row}) => {
           return <ClickToShowText
-            title="Contenido de la publicación"
+            title="Contenido del comentario"
             text={row.original.content}
             length={100}
           />
@@ -62,16 +62,6 @@ export default function PostPage() {
         },
       },
       {
-        header: "Comentarios",
-        accessorKey: "comments",
-        enableSorting: true,
-        cell: ({row}) => {
-          return <div className="flex items-center justify-center">
-            {row.original.comments.length}
-          </div>
-        },
-      },
-      {
         header: "Denuncias",
         accessorKey: "reportedBy",
         enableSorting: true,
@@ -81,31 +71,32 @@ export default function PostPage() {
           </div>
         },
       },
-    ],
-    entityActions: (post) => {
-      return [
-        {
-          label: "Ver comentarios",
-          icon: MessageSquareText,
-          onClick: () => {
-            navigation(`/posts/${post.id}/comments`);
-          }
-        }
-      ];
-    }
+    ]
   }
 
   return (
-    <BreadcrumbSubLayout items={["Publicaciones"]}>
-      <CrudTable<Post, PostDto, string>
-        title={"Publicaciones"}
+    <BreadcrumbSubLayout items={["Publicaciones", "Comentarios"]}>
+      <CrudTable<Comment, any, string>
+        title={<div className="flex items-center space-x-2 mb-4">
+          <BackButton/>
+          <h2 className="text-2xl font-bold">Comentarios</h2>
+        </div>}
         operations={{
-          find: postService.find,
-          page: postService.page,
-          delete: postService.delete,
+          page: (query) => postService.pageComments(postId, query),
+          delete: (id) => postService.deleteComment(postId, id),
         }}
         table={table}
       />
     </BreadcrumbSubLayout>
+  );
+}
+
+function BackButton() {
+  return (
+    <Link to="/posts">
+      <Button variant="outline" size="icon">
+        <ChevronLeft/>
+      </Button>
+    </Link>
   );
 }

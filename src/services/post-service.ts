@@ -1,5 +1,9 @@
 import apiClient from "@/lib/axios.ts";
-import {Entity} from "@/lib/crud.ts";
+import {
+  Entity,
+  Page,
+  PageQuery
+} from "@/lib/crud.ts";
 import {
   restDeleteable,
   restFindable,
@@ -25,6 +29,8 @@ export interface Post extends ByAuthor<number>, Entity<string> {
 export interface Comment extends ByAuthor<number> {
   id: string;
   content: string;
+  likedBy: string[];
+  reportedBy: string[];
   createdAt: Date;
 }
 
@@ -38,14 +44,22 @@ export interface PostDto {
   content: string;
 }
 
+export interface CommentFilters {
+  authorId: number;
+}
+
 function modelTransformer(model: any): Post {
   return {
     ...model,
     createdAt: new Date(model.createdAt),
-    comments: model.comments.map((comment: any) => ({
-      ...comment,
-      createdAt: new Date(comment.createdAt),
-    })),
+    comments: model.comments.map(commentModelTransformer),
+  };
+}
+
+function commentModelTransformer(model: any): Comment {
+  return {
+    ...model,
+    createdAt: new Date(model.createdAt),
   };
 }
 
@@ -57,6 +71,16 @@ async function topPosts(): Promise<TopPostsDto> {
   return {mostLikedPost, mostCommentedPost};
 }
 
+async function pageComments(postId: string, query: PageQuery<CommentFilters>): Promise<Page<Comment>> {
+  const operarion = restPageable<Comment, CommentFilters>(apiClient, `${resource}/${postId}/comments`, {modelTransformer: commentModelTransformer});
+  return await operarion.page(query);
+}
+
+async function deleteComment(postId: string, commentId: string): Promise<void> {
+  const operarion = restDeleteable<string>(apiClient, `${resource}/${postId}/comments`);
+  await operarion.delete(commentId);
+}
+
 const pageable = restPageable<Post>(apiClient, resource, {modelTransformer});
 const findable = restFindable<Post, string>(apiClient, resource, {modelTransformer});
 const deletable = restDeleteable<string>(apiClient, resource);
@@ -66,4 +90,6 @@ export const postService = {
   ...findable,
   ...deletable,
   topPosts,
+  pageComments,
+  deleteComment,
 }

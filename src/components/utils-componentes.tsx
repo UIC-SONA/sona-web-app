@@ -87,13 +87,40 @@ export function LoadingImage({fetcher, alt}: Readonly<ImageFetcherProps>) {
   );
 }
 
-export function ClickToShowUUID({id}: Readonly<WithUUID>) {
+/**
+ * Muestra el UUID completo al hacer click en el botón, se usa cuando el id es muy largo, por ejemplo un UUID
+ * @param id
+ * */
+export function ClickToShowID({id}: Readonly<WithUUID>) {
   const [show, setShow] = useState(false);
 
   return (
     <button onClick={() => setShow(!show)} className="cursor-pointer">
       {show ? id : id.substring(0, 10)}
     </button>
+  )
+}
+
+/**
+ * Muestra el texto truncado en un Dialogo al hacer click en el botón, se usa cuando el texto es muy largo
+ * */
+export function ClickToShowText({text, length, title}: Readonly<TruncateProps & { title?: string }>) {
+  const [show, setShow] = useState(false);
+
+  return (
+    <>
+      <button onClick={() => setShow(!show)} className="cursor-pointer text-start">
+        <Truncate text={text} length={length}/>
+      </button>
+      <Dialog open={show} onOpenChange={setShow}>
+        <DialogContent className="text-start p-4 sm:max-w-[80vw]">
+          {title && <DialogTitle>{title}</DialogTitle>}
+          <p className="text-sm">
+            {text}
+          </p>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 

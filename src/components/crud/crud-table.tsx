@@ -5,7 +5,7 @@ import {
   Sort,
 } from "@/lib/crud.ts";
 import {
-  ComponentType,
+  ComponentType, ReactNode,
   useEffect,
   useState
 } from "react";
@@ -106,7 +106,7 @@ export interface TableFactory<TData extends Entity<ID>, ID, E = {}> {
 }
 
 export type CrudTableProps<TData extends Entity<ID>, Dto, ID, E = {}> = {
-  title: string;
+  title: ReactNode;
   operations: Partial<CrudOperations<TData, Dto, ID, E>>;
   table: TableFactory<TData, ID, E>;
   form?: FormFactory<TData, Dto, ID>;
@@ -122,9 +122,9 @@ export default function CrudTable<
   TData extends Entity<ID>,
   Dto,
   ID,
-  E = {}
->({title, table, operations, form}: Readonly<CrudTableProps<TData, Dto, ID, E>>) {
-  return <CrudOperationsTable<TData, Dto, ID, E>
+  Filters = {}
+>({title, table, operations, form}: Readonly<CrudTableProps<TData, Dto, ID, Filters>>) {
+  return <CrudOperationsTable<TData, Dto, ID, Filters>
     title={title}
     table={table}
     form={form}
@@ -136,18 +136,18 @@ interface CrudOperationsTableProp<
   TData extends Entity<ID>,
   Dto,
   ID,
-  E = {}
-> extends Partial<CrudOperations<TData, Dto, ID, E>> {
-  title: string;
-  table: TableFactory<TData, ID, E>;
+  Filters = {}
+> extends Partial<CrudOperations<TData, Dto, ID, Filters>> {
+  title: ReactNode;
+  table: TableFactory<TData, ID, Filters>;
   form?: FormFactory<TData, Dto, ID>;
 }
 
-export function CrudOperationsTable<
+function CrudOperationsTable<
   TData extends Entity<ID>,
   Dto,
   ID,
-  E = {}
+  Filters = {}
 >({
     title,
     table: {
@@ -160,7 +160,7 @@ export function CrudOperationsTable<
     delete: deleteFn,
     create,
     update
-  }: Readonly<CrudOperationsTableProp<TData, Dto, ID, E>>
+  }: Readonly<CrudOperationsTableProp<TData, Dto, ID, Filters>>
 ) {
 
   const isFirstRender = useIsFirstRender();
@@ -171,7 +171,7 @@ export function CrudOperationsTable<
   const [paginationInfo, setPaginationInfo] = useState<PaginationInfo>({totalPages: 0, totalElements: 0});
   const [sorting, setSorting] = useState<SortingState>([]);
   const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState<Partial<E>>({});
+  const [filters, setFilters] = useState<Partial<Filters>>({});
 
   const [loading, setLoading] = useState(true);
   const [loadingSearch, setLoadingSearch] = useState(false);
@@ -210,7 +210,7 @@ export function CrudOperationsTable<
     if (!page) return;
     try {
 
-      const query: PageQuery<E> = {
+      const query: PageQuery<Filters> = {
         search,
         page: pagination.pageIndex,
         sorts: getSortParams(),
@@ -324,16 +324,16 @@ export function CrudOperationsTable<
     setFilters({});
   }
 
-  const setFilter = (key: keyof E, value?: E[keyof E]) => {
+  const setFilter = (key: keyof Filters, value?: Filters[keyof Filters]) => {
     setLoadingFilters(true);
     setFilters((prev) => ({...prev, [key]: value}));
   }
 
-  const getFilter = (key: keyof E): E[keyof E] | undefined => {
+  const getFilter = (key: keyof Filters): Filters[keyof Filters] | undefined => {
     return filters[key];
   }
 
-  const filterState: FilterState<keyof E, E> = {
+  const filterState: FilterState<keyof Filters, Filters> = {
     values: filters,
     loading: loadingFilters,
     set: setFilter,
@@ -343,7 +343,7 @@ export function CrudOperationsTable<
 
   return (
     <div className="w-full">
-      <h1 className="text-2xl font-bold mb-4">{title}</h1>
+      {typeof title === "string" ? < h1 className="text-2xl font-bold mb-4">{title}</h1> : title}
       <div className="grid gap-4 mb-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 items-center">
         <IntelliSearch
           value={search}
@@ -371,7 +371,9 @@ export function CrudOperationsTable<
           />}
         </div>
       </div>
-      {FilterComponent && <FilterComponent filters={filterState}/>}
+      {
+        FilterComponent && <FilterComponent filters={filterState}/>
+      }
       <div className="border rounded-lg overflow-hidden">
         <TableComponent>
           <TableHeader className="bg-primary bg-opacity-50">
@@ -491,7 +493,8 @@ export function CrudOperationsTable<
                 </Button>
             </div>}
       </div>
-    </div>);
+    </div>)
+    ;
 }
 
 function SortIcon({isSorted, sorting}: Readonly<{ isSorted: false | SortDirection, sorting: boolean }>) {

@@ -1,5 +1,5 @@
 import {
-  ClickToShowUUID,
+  ClickToShowID,
   LoadingImage,
   OpenImageModal,
   Truncate
@@ -38,7 +38,7 @@ export default function DidacticContentPage() {
         accessorKey: "id",
         enableSorting: true,
         cell: ({row}) => {
-          return <ClickToShowUUID id={row.original.id}/>
+          return <ClickToShowID id={row.original.id}/>
         }
       },
       {

@@ -14,7 +14,7 @@ import AuthGuard from "@/guards/auth-guard.tsx";
 import Dashboard from "@/routes/dashboard.tsx";
 import UserPage from "@/routes/users/index.page.tsx";
 import TipsPage from "@/routes/tips/tips.page.tsx";
-import ForumPage from "@/routes/posts/index.page.tsx";
+import PostPage from "@/routes/posts/index.page.tsx";
 import DidacticContentPage from "@/routes/didactic-content/index.page.tsx";
 import ProfessionalSchedulePage from "@/routes/professionals/schedule.page.tsx";
 import ProfessionalPage from "@/routes/professionals/index.page.tsx";
@@ -25,6 +25,7 @@ import AuthPage from "@/routes/auth/index.page.tsx";
 import LogIn from "@/routes/auth/log-in.page.tsx";
 import SingUp from "@/routes/auth/sing-up.page.tsx";
 import {userService} from "@/services/user-service.ts";
+import CommentsPage from "@/routes/posts/comments.page.tsx";
 
 
 createRoot(document.getElementById('root')!).render(
@@ -48,7 +49,8 @@ function SonaRoutes() {
         <Route element={<AuthGuard hasAuthorized={userService.hasPrivilegedUser} redirect="/"/>}>
           <Route path="users" element={<UserPage/>}/>
           <Route path="tips" element={<TipsPage/>}/>
-          <Route path="posts" element={<ForumPage/>}/>
+          <Route path="posts" element={<PostPage/>}/>
+          <Route path="posts/:postId/comments" element={<CommentsPage/>}/>
           <Route path="didactic-content" element={<DidacticContentPage/>}/>
           <Route path="professional-schedules" element={<ProfessionalSchedulePage/>}/>
           <Route path="professionals" element={<ProfessionalPage/>}/>

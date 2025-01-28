@@ -115,12 +115,12 @@ function defaultFiltersTransformer<F = {}>(filters: Partial<F>): URLSearchParams
 
 }
 
-export interface RestPageableConfig<T, F> extends ReadableConfig<T> {
-  filtersTransformer?: FiltersTransformer<F>;
+export interface RestPageableConfig<T, Filters> extends ReadableConfig<T> {
+  filtersTransformer?: FiltersTransformer<Filters>;
 }
 
-export function restPageable<T, F = {}>(axios: Axios, resource: string, config?: RestPageableConfig<T, F> & ConfigWithHeader): Pageable<T, F> {
-  const page = async (query: PageQuery<F>) => {
+export function restPageable<T, Filters = {}>(axios: Axios, resource: string, config?: RestPageableConfig<T, Filters> & ConfigWithHeader): Pageable<T, Filters> {
+  const page = async (query: PageQuery<Filters>) => {
     const response = await axios.get<Page<any>>(
       resource,
       {
@@ -237,13 +237,13 @@ export function restDeleteable<ID>(axios: Axios, resource: string, headers?: Hea
 }
 
 
-export type RestReadConfig<F> = RestPageableConfig<any, F> & ConfigWithHeader<ReadHeadersConfig>;
+export type RestReadConfig<Filters> = RestPageableConfig<any, Filters> & ConfigWithHeader<ReadHeadersConfig>;
 
-export function restRead<T extends Entity<ID>, ID, F = {}>(axios: Axios, resource: string, config?: RestReadConfig<F>): ReadOperations<T, ID, F> {
+export function restRead<T extends Entity<ID>, ID, Filters = {}>(axios: Axios, resource: string, config?: RestReadConfig<Filters>): ReadOperations<T, ID, Filters> {
 
   const {headers} = config ?? {};
 
-  const pageable = restPageable<T, F>(axios, resource, {...config, headers: headers?.pageable});
+  const pageable = restPageable<T, Filters>(axios, resource, {...config, headers: headers?.pageable});
   const findable = restFindable<T, ID>(axios, resource, {...config, headers: headers?.findable});
   const countable = restCountable(axios, resource, headers?.countable);
   const existable = restExistable<ID>(axios, resource, headers?.existable);
@@ -271,10 +271,10 @@ export function restWrite<T extends Entity<ID>, D, ID>(axios: Axios, resource: s
   };
 }
 
-export type RestCrudConfig<D, F> = RestReadConfig<F> & RestWriteConfig<D>;
+export type RestCrudConfig<D, Filters> = RestReadConfig<Filters> & RestWriteConfig<D>;
 
-export function restCrud<T extends Entity<ID>, D, ID, F = {}>(axios: Axios, resource: string, config?: RestCrudConfig<D, F>): CrudOperations<T, D, ID, F> {
-  const read = restRead<T, ID, F>(axios, resource, config);
+export function restCrud<T extends Entity<ID>, D, ID, Filters = {}>(axios: Axios, resource: string, config?: RestCrudConfig<D, Filters>): CrudOperations<T, D, ID, Filters> {
+  const read = restRead<T, ID, Filters>(axios, resource, config);
   const write = restWrite<T, D, ID>(axios, resource, config);
 
   return {

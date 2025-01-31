@@ -130,7 +130,7 @@ export default function LogIn() {
             />
 
             {form.formState.errors.root && (
-              <div className="text-red-500 text-sm">
+              <div className="text-red-500 text-sm text-center">
                 {form.formState.errors.root.message}
               </div>
             )}

@@ -40,7 +40,7 @@ import {
 import {format} from "date-fns";
 import {Card, CardContent} from "@/components/ui/card.tsx";
 import UserSelect from "@/components/user-select.tsx";
-import AppointmentView from "@/components/appointment-view.tsx";
+import AppointmentView from "@/components/ui/appointment-view.tsx";
 import {CalendarDate} from "@internationalized/date";
 import DatePicker from "@/components/ui/date/date-picker.tsx";
 import {ZONE_ID} from "@/constans.ts";

@@ -36,7 +36,7 @@ import {
 import {EventInput} from "@fullcalendar/core";
 import {Button} from "@/components/ui/button.tsx";
 import UserSelect from "@/components/user-select.tsx";
-import AppointmentView from "@/components/appointment-view.tsx";
+import AppointmentView from "@/components/ui/appointment-view.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
 import {useTheme} from "@/context/theme-context.tsx";
 

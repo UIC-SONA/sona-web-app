@@ -45,6 +45,7 @@ import {
 import {introspect} from "@/lib/errors.ts";
 import {Link} from "react-router";
 import {API_URL} from "@/constans.ts";
+import PasswordInput from "@/components/ui/password-input.tsx";
 
 const signUpSchema = z.object({
     username: z.string().min(1, "El usuario es requerido"),
@@ -221,9 +222,8 @@ export default function SignUp() {
                                     <FormItem>
                                         <div className="relative">
                                             <FormControl>
-                                                <Input
+                                                <PasswordInput
                                                     disabled={loading}
-                                                    type="password"
                                                     placeholder="Contraseña"
                                                     className="pl-10"
                                                     {...field}
@@ -244,9 +244,8 @@ export default function SignUp() {
                                     <FormItem>
                                         <div className="relative">
                                             <FormControl>
-                                                <Input
+                                                <PasswordInput
                                                     disabled={loading}
-                                                    type="password"
                                                     placeholder="Repetir contraseña"
                                                     className="pl-10"
                                                     {...field}

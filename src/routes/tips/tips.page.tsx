@@ -29,6 +29,7 @@ import CrudTable, {
   TableFactory
 } from "@/components/crud/crud-table.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
+import {ExportScheme} from "@/lib/crud.ts";
 
 export default function TipsPage() {
   
@@ -146,6 +147,11 @@ export default function TipsPage() {
     FormComponent: FormComponent,
   };
   
+  const exportScheme: ExportScheme = {
+    titles: ["Título", "Resumen", "Descripción", "Tags", "Activo", "Calificación", "Calificaciones"],
+    fields: ["title", "summary", "description", "tags", "active", "averageRate", "totalRate"],
+  }
+  
   return (
     <BreadcrumbSubLayout items={["Tips"]}>
       <CrudTable<Tip, TipDto, string>
@@ -153,6 +159,7 @@ export default function TipsPage() {
         operations={tipsService}
         table={table}
         form={form}
+        exportScheme={exportScheme}
       />
     </BreadcrumbSubLayout>
   );

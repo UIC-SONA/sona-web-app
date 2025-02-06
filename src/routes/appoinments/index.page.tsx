@@ -44,13 +44,14 @@ import AppointmentView from "@/components/ui/appointment-view.tsx";
 import {CalendarDate} from "@internationalized/date";
 import DatePicker from "@/components/ui/date/date-picker.tsx";
 import {ZONE_ID} from "@/constans.ts";
+import {ExportScheme} from "@/lib/crud.ts";
 
 
 export function AppointmentPage() {
-
+  
   const {authenticated} = useAuth();
   if (!authenticated) return null;
-
+  
   const table: TableFactory<Appointment, number, AppointmentFilters> = {
     columns: [
       {
@@ -110,9 +111,9 @@ export function AppointmentPage() {
         header: "Acciones",
         enableSorting: false,
         cell: ({row}) => {
-
+          
           const [appointment, setAppointment] = useState<Appointment | undefined>();
-
+          
           return <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -128,36 +129,42 @@ export function AppointmentPage() {
     ],
     FilterComponent: FilterComponent
   }
-
+  
+  const exportScheme: ExportScheme = {
+    titles: ["Fecha", "Intervalo", "Tipo", "Nombre de usuario", "Apellido de usuario", "Nombre de profesional", "Apellido de profesional", "Cancelado"],
+    fields: ["date", "hour", "type", "attendant.firstName", "attendant.lastName", "professional.firstName", "professional.lastName", "canceled"],
+  }
+  
   return (
     <BreadcrumbSubLayout items={['Citas']}>
       <CrudTable<Appointment, any, number, AppointmentFilters>
         title="Citas"
         table={table}
         operations={appointmentsService}
+        exportScheme={exportScheme}
       />
     </BreadcrumbSubLayout>
   );
 }
 
 function FilterComponent({filters}: Readonly<FilterComponentProps<AppointmentFilters>>) {
-
+  
   const {from, to, canceled, type, professionalId, userId} = filters.values;
   const {user} = useAuth();
   const [professional, setProfessional] = useState<User | undefined>();
   const [attendant, setAttendant] = useState<User | undefined>();
-
+  
   useEffect(() => {
     if (!professionalId) setProfessional(undefined);
   }, [professionalId]);
-
+  
   useEffect(() => {
     if (!userId) setAttendant(undefined);
   }, [userId]);
-
+  
   const fromValue = from ? new CalendarDate(from.getFullYear(), from.getMonth() + 1, from.getDate()) : null;
   const toValue = to ? new CalendarDate(to.getFullYear(), to.getMonth() + 1, to.getDate()) : null;
-
+  
   return (
     <Card className="my-4">
       <CardContent>
@@ -174,20 +181,20 @@ function FilterComponent({filters}: Readonly<FilterComponentProps<AppointmentFil
           </div>
         </div>
         <div className="flex flex-wrap gap-4 items-center justify-center mt-3">
-
+          
           {(user && userService.hasPrivilegedUser(user)) && <div className="w-60">
-              <UserSelect
-                  selectItemText="Profesional"
-                  searchPlaceholder="Buscar profesional"
-                  value={professional}
-                  filters={{
-                    authorities: userService.professionalAuthorities,
-                  }}
-                  onSelect={(professional) => {
-                    setProfessional(professional);
-                    filters.set("professionalId", professional?.id);
-                  }}
-              />
+            <UserSelect
+              selectItemText="Profesional"
+              searchPlaceholder="Buscar profesional"
+              value={professional}
+              filters={{
+                authorities: userService.professionalAuthorities,
+              }}
+              onSelect={(professional) => {
+                setProfessional(professional);
+                filters.set("professionalId", professional?.id);
+              }}
+            />
           </div>}
           <div className="w-60">
             <UserSelect
@@ -210,7 +217,7 @@ function FilterComponent({filters}: Readonly<FilterComponentProps<AppointmentFil
               onChange={(date) => filters.set("from", date ? date.toDate(ZONE_ID) : undefined)}
             />
           </div>
-
+          
           <div className="grid gap-2">
             <DatePicker<CalendarDate>
               placeHolder="Hasta"
@@ -218,12 +225,12 @@ function FilterComponent({filters}: Readonly<FilterComponentProps<AppointmentFil
               onChange={(date) => filters.set("to", date ? date.toDate(ZONE_ID) : undefined)}
             />
           </div>
-
+          
           <SelectAppointmentType
             value={type}
             onChange={(value) => filters.set("type", value)}
           />
-
+          
           <CaneceledCheckbox
             value={canceled === true}
             onCheckedChange={(value) => filters.set("canceled", value)}
@@ -288,5 +295,5 @@ export function CaneceledCheckbox({value, onCheckedChange}: Readonly<CaneceledCh
       Cancelado
     </label>
   </div>
-
+  
 }

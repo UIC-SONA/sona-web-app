@@ -1,6 +1,6 @@
 import {
   CrudOperations,
-  Entity,
+  Entity, ExportScheme,
   PageQuery,
   Sort,
 } from "@/lib/crud.ts";
@@ -42,7 +42,7 @@ import {
   EllipsisVerticalIcon,
   EyeIcon,
   LoaderCircle, LucideIcon,
-  PlusIcon,
+  PlusIcon, SaveIcon,
   SearchIcon,
   TrashIcon,
 } from "lucide-react";
@@ -77,13 +77,13 @@ export interface FilterComponentProps<E> {
 
 interface FilterState<K extends keyof E, E> {
   values: Partial<E>;
-
+  
   set(key: K, value?: E[K]): void;
-
+  
   get(key: K): E[K] | undefined;
-
+  
   clear(): void;
-
+  
   loading: boolean;
 }
 
@@ -105,11 +105,13 @@ export interface TableFactory<TData extends Entity<ID>, ID, E = {}> {
   entityActions?: (data: TData, reload: () => void) => EntityAction[];
 }
 
+
 export type CrudTableProps<TData extends Entity<ID>, Dto, ID, E = {}> = {
   title: ReactNode;
   operations: Partial<CrudOperations<TData, Dto, ID, E>>;
   table: TableFactory<TData, ID, E>;
   form?: FormFactory<TData, Dto, ID>;
+  exportScheme?: ExportScheme;
 }
 
 interface PaginationInfo {
@@ -123,11 +125,12 @@ export default function CrudTable<
   Dto,
   ID,
   Filters = {}
->({title, table, operations, form}: Readonly<CrudTableProps<TData, Dto, ID, Filters>>) {
+>({title, table, operations, form, exportScheme}: Readonly<CrudTableProps<TData, Dto, ID, Filters>>) {
   return <CrudOperationsTable<TData, Dto, ID, Filters>
     title={title}
     table={table}
     form={form}
+    exportScheme={exportScheme}
     {...operations}
   />
 }
@@ -141,6 +144,7 @@ interface CrudOperationsTableProp<
   title: ReactNode;
   table: TableFactory<TData, ID, Filters>;
   form?: FormFactory<TData, Dto, ID>;
+  exportScheme?: ExportScheme;
 }
 
 function CrudOperationsTable<
@@ -157,22 +161,24 @@ function CrudOperationsTable<
     },
     form,
     page,
+    exportScheme,
     delete: deleteFn,
+    export: exportFn,
     create,
     update
   }: Readonly<CrudOperationsTableProp<TData, Dto, ID, Filters>>
 ) {
-
+  
   const isFirstRender = useIsFirstRender();
   const {pushAlertDialog} = useAlertDialog();
-
+  
   const [data, setData] = useState<TData[]>([]);
   const [pagination, setPagination] = useState<PaginationState>({pageIndex: 0, pageSize: 20});
   const [paginationInfo, setPaginationInfo] = useState<PaginationInfo>({totalPages: 0, totalElements: 0});
   const [sorting, setSorting] = useState<SortingState>([]);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<Partial<Filters>>({});
-
+  
   const [loading, setLoading] = useState(true);
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [loadingNextPagination, setLoadingNextPagination] = useState(false);
@@ -180,14 +186,14 @@ function CrudOperationsTable<
   const [loadingPageSize, setLoadingPageSize] = useState(false);
   const [loadingFilters, setLoadingFilters] = useState(false);
   const [sortingColumn, setSortingColumn] = useState<string | undefined>();
-
+  
   const anyLoading = loading
     || loadingNextPagination
     || loadingBackPagination
     || loadingSearch
     || loadingPageSize
     || sortingColumn !== undefined
-
+  
   const getSortParams = () => {
     if (!sorting.length) return [];
     return sorting.map<Sort>(({id, desc}: ColumnSort) => ({
@@ -195,7 +201,7 @@ function CrudOperationsTable<
       direction: desc ? 'desc' : 'asc',
     }));
   };
-
+  
   const setLoadings = (loading: boolean) => {
     setLoading(loading);
     setLoadingNextPagination(loading);
@@ -205,21 +211,24 @@ function CrudOperationsTable<
     setLoadingFilters(loading);
     setSortingColumn(undefined);
   }
-
+  
+  const getPageQuery: () => PageQuery<Filters> = () => {
+    return {
+      search,
+      page: pagination.pageIndex,
+      size: pagination.pageSize,
+      sorts: getSortParams(),
+      filters,
+    };
+  }
+  
   const fetchData = async () => {
     if (!page) return;
     try {
-
-      const query: PageQuery<Filters> = {
-        search,
-        page: pagination.pageIndex,
-        sorts: getSortParams(),
-        size: pagination.pageSize,
-        filters,
-      };
-
+      
+      const query: PageQuery<Filters> = getPageQuery();
       const results = await page(query);
-
+      
       setData(results.content);
       setPagination({
         pageSize: results.page.size,
@@ -229,7 +238,7 @@ function CrudOperationsTable<
         totalPages: results.page.totalPages,
         totalElements: results.page.totalElements,
       });
-
+      
     } catch (error) {
       //
       const {title, description} = introspect(error);
@@ -240,37 +249,58 @@ function CrudOperationsTable<
       setLoadings(false);
     }
   };
-
+  
+  const hasExport = exportScheme != undefined && exportFn != undefined;
+  
+  const exportData = async () => {
+    if (!hasExport) return;
+    
+    try {
+      const query: PageQuery<Filters> = getPageQuery();
+      const blob = await exportFn(query, exportScheme);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "export.xlsx";
+      a.click();
+      URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      const {title, description} = introspect(error);
+      pushAlertDialog({type: "error", title, description});
+    }
+  }
   const loadData = () => {
     fetchData().then();
   }
-
+  
   useEffect(() => {
     setLoading(true);
     loadData();
   }, []);
-
-
+  
+  
   useEffect(() => {
     if (isFirstRender) return;
     loadData();
   }, [pagination.pageIndex, pagination.pageSize, sorting, filters]);
-
+  
   useEffect(() => {
     if (isFirstRender) return;
     const handler = setTimeout(() => {
       setLoadingSearch(true);
       loadData();
     }, 500);
-
+    
     return () => clearTimeout(handler);
   }, [search]);
-
+  
+  
   const useFormInTable =
     deleteFn != undefined
     || (update != undefined && form?.update != undefined)
     || (entityActions != undefined);
-
+  
   const table = useReactTable({
     data,
     columns,
@@ -293,22 +323,22 @@ function CrudOperationsTable<
     manualSorting: true,
     pageCount: paginationInfo.totalPages,
   });
-
+  
   const nextPage = () => {
     setLoadingNextPagination(true);
     table.nextPage();
   };
-
+  
   const previousPage = () => {
     setLoadingBackPagination(true);
     table.previousPage();
   };
-
+  
   const setPageSize = (size: number) => {
     setLoadingPageSize(true);
     table.setPageSize(size);
   }
-
+  
   const reload = () => {
     setLoading(true);
     if (table.getState().pagination.pageIndex === 0) {
@@ -317,22 +347,22 @@ function CrudOperationsTable<
       table.resetPageIndex();
     }
   }
-
+  
   const clearFilters = () => {
     if (Object.keys(filters).length === 0) return;
     setLoadingFilters(true);
     setFilters({});
   }
-
+  
   const setFilter = (key: keyof Filters, value?: Filters[keyof Filters]) => {
     setLoadingFilters(true);
     setFilters((prev) => ({...prev, [key]: value}));
   }
-
+  
   const getFilter = (key: keyof Filters): Filters[keyof Filters] | undefined => {
     return filters[key];
   }
-
+  
   const filterState: FilterState<keyof Filters, Filters> = {
     values: filters,
     loading: loadingFilters,
@@ -340,18 +370,18 @@ function CrudOperationsTable<
     get: getFilter,
     clear: clearFilters,
   };
-
+  
   return (
     <div className="w-full">
       {typeof title === "string" ? < h1 className="text-2xl font-bold mb-4">{title}</h1> : title}
-      <div className="grid gap-4 mb-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 items-center">
+      <div className="grid gap-4 mb-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 items-center">
         <IntelliSearch
           value={search}
           onSearch={setSearch}
           loading={loadingSearch}
           className="col-span-1 sm:col-span-2 lg:col-span-4"
         />
-        <div className="col-span-1 sm:col-span-2 lg:col-span-2 flex items-center justify-end space-x-2">
+        <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex items-center justify-end space-x-2">
           <DropdownPerPage
             pageSize={table.getState().pagination.pageSize}
             onPageSizeChange={setPageSize}
@@ -360,14 +390,21 @@ function CrudOperationsTable<
           <DropdownVisibleColumns
             table={table}
           />
+          {hasExport && <Button
+            variant="outline"
+            onClick={exportData}
+            disabled={anyLoading}
+          >
+            <SaveIcon/>
+          </Button>}
           {form?.create && create && <CreateAction
-              form={{
-                defaultValues: form.create.defaultValues,
-                schema: form.create.schema,
-                FormComponent: form.FormComponent,
-              }}
-              create={create}
-              reload={reload}
+            form={{
+              defaultValues: form.create.defaultValues,
+              schema: form.create.schema,
+              FormComponent: form.FormComponent,
+            }}
+            create={create}
+            reload={reload}
           />}
         </div>
       </div>
@@ -379,14 +416,14 @@ function CrudOperationsTable<
           <TableHeader className="bg-primary bg-opacity-50">
             {table.getHeaderGroups().map((headerGroup) => {
               const headClassName = "font-bold text-primary-foreground";
-
+              
               return (
                 <TableRow key={headerGroup.id} className="hover:bg-primary">
                   {headerGroup.headers.map((header) => {
                     const column = header.column;
                     const columnDef = column.columnDef;
                     const headerToRender = columnDef.header;
-
+                    
                     if (typeof headerToRender === "string" && column.getCanSort()) {
                       return (
                         <TableHead key={header.id} className={headClassName}>
@@ -406,7 +443,7 @@ function CrudOperationsTable<
                         </TableHead>
                       )
                     }
-
+                    
                     return (
                       <TableHead key={header.id} className={headClassName}>
                         {header.isPlaceholder ? null : flexRender(columnDef.header, header.getContext())}
@@ -420,12 +457,12 @@ function CrudOperationsTable<
           </TableHeader>
           <TableBody>
             {loading && <TableRow>
-                <TableCell colSpan={columns.length + (useFormInTable ? 1 : 0)} className="h-24 text-center">
-                    <div className="flex items-center justify-center space-x-2 flex-col">
-                        <LoaderCircle className="animate-spin"/>
-                        Cargando...
-                    </div>
-                </TableCell>
+              <TableCell colSpan={columns.length + (useFormInTable ? 1 : 0)} className="h-24 text-center">
+                <div className="flex items-center justify-center space-x-2 flex-col">
+                  <LoaderCircle className="animate-spin"/>
+                  Cargando...
+                </div>
+              </TableCell>
             </TableRow>}
             {!loading && table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => {
@@ -438,22 +475,22 @@ function CrudOperationsTable<
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
-
+                  
                   {useFormInTable && <EntityActions
-                      entity={row.original}
-                      form={form}
-                      reload={reload}
-                      delete={deleteFn}
-                      update={update}
-                      entityActions={entityActions}
+                    entity={row.original}
+                    form={form}
+                    reload={reload}
+                    delete={deleteFn}
+                    update={update}
+                    entityActions={entityActions}
                   />}
                 </TableRow>
               })
             ) : (
               !isFirstRender && <TableRow>
-                  <TableCell colSpan={columns.length + (useFormInTable ? 1 : 0)} className="h-24 text-center">
-                      No hay datos
-                  </TableCell>
+                <TableCell colSpan={columns.length + (useFormInTable ? 1 : 0)} className="h-24 text-center">
+                  No hay datos
+                </TableCell>
               </TableRow>
             )}
           </TableBody>
@@ -463,35 +500,35 @@ function CrudOperationsTable<
         <span className="text-sm text-muted-foreground">
           Total de registros: <b>{paginationInfo.totalElements}</b>
         </span>
-
+        
         {table.getPageCount() > 0 &&
-            <div className="space-x-2">
+          <div className="space-x-2">
                 <span className="text-sm text-muted-foreground">
                     Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount()}
                 </span>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={previousPage}
-                    disabled={!table.getCanPreviousPage() || anyLoading}
-                >
-                  {loadingBackPagination
-                    ? <LoaderCircle className="animate-spin"/>
-                    : <ChevronLeft/>
-                  }
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={nextPage}
-                    disabled={!table.getCanNextPage() || anyLoading}
-                >
-                  {loadingNextPagination
-                    ? <LoaderCircle className="animate-spin"/>
-                    : <ChevronRight/>
-                  }
-                </Button>
-            </div>}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={previousPage}
+              disabled={!table.getCanPreviousPage() || anyLoading}
+            >
+              {loadingBackPagination
+                ? <LoaderCircle className="animate-spin"/>
+                : <ChevronLeft/>
+              }
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={nextPage}
+              disabled={!table.getCanNextPage() || anyLoading}
+            >
+              {loadingNextPagination
+                ? <LoaderCircle className="animate-spin"/>
+                : <ChevronRight/>
+              }
+            </Button>
+          </div>}
       </div>
     </div>)
     ;
@@ -577,19 +614,19 @@ function DropdownVisibleColumns<TData>({table, className}: Readonly<DropdownVisi
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {table
-          .getAllColumns()
-          .filter((column) => column.getCanHide())
-          .map((column) => {
-            return (
-              <DropdownMenuCheckboxItem
-                key={column.id}
-                checked={column.getIsVisible()}
-                onCheckedChange={(value) => column.toggleVisibility(value)}
-              >
-                {typeof column.columnDef.header === "string" ? column.columnDef.header : ""}
-              </DropdownMenuCheckboxItem>
-            )
-          })}
+        .getAllColumns()
+        .filter((column) => column.getCanHide())
+        .map((column) => {
+          return (
+            <DropdownMenuCheckboxItem
+              key={column.id}
+              checked={column.getIsVisible()}
+              onCheckedChange={(value) => column.toggleVisibility(value)}
+            >
+              {typeof column.columnDef.header === "string" ? column.columnDef.header : ""}
+            </DropdownMenuCheckboxItem>
+          )
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   </div>
@@ -619,23 +656,23 @@ function EntityActions<TData extends Entity<ID>, Dto, ID>(
     update,
     entityActions
   }: Readonly<EntityActionsProps<TData, Dto, ID>>) {
-
+  
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-
+  
   const handleUpdateClick = () => {
     setDropdownOpen(false);
     setIsUpdateOpen(true)
   };
-
+  
   const handleDeleteClick = () => {
     setDropdownOpen(false);
     setIsDeleteOpen(true)
   };
-
+  
   const actions = entityActions?.(entity, reload) ?? [];
-
+  
   return (
     <>
       {form?.update && update && (
@@ -707,7 +744,7 @@ function CreateAction<TData extends Entity<ID>, Dto, ID>(
     reload,
   }: Readonly<CreateActionProps<TData, Dto, ID>>) {
   const [isOpen, setIsOpen] = useState(false);
-
+  
   return (
     <>
       <CreateForm

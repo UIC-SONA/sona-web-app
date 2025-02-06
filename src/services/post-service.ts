@@ -5,7 +5,7 @@ import {
   PageQuery
 } from "@/lib/crud.ts";
 import {
-  restDeleteable,
+  restDeleteable, restExportable,
   restFindable,
   restPageable
 } from "@/lib/rest-crud.ts";
@@ -82,11 +82,13 @@ async function deleteComment(postId: string, commentId: string): Promise<void> {
 }
 
 const pageable = restPageable<Post>(apiClient, resource, {modelTransformer});
+const exportable = restExportable(apiClient, resource);
 const findable = restFindable<Post, string>(apiClient, resource, {modelTransformer});
 const deletable = restDeleteable<string>(apiClient, resource);
 
 export const postService = {
   ...pageable,
+  ...exportable,
   ...findable,
   ...deletable,
   topPosts,

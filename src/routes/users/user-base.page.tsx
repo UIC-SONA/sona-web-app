@@ -32,6 +32,7 @@ import {ShieldCheck, ShieldMinus} from "lucide-react";
 import {useAlertDialog} from "@/context/alert-dialog-context.tsx";
 import {introspect} from "@/lib/errors.ts";
 import {Checkbox} from "@/components/ui/checkbox.tsx";
+import {ExportScheme} from "@/lib/crud.ts";
 
 
 export interface UserBasePageProps {
@@ -172,6 +173,11 @@ export default function UserBasePage(
     operations.page = (query) => userService.page({...query, filters: {authorities}});
   }
   
+  const exportScheme: ExportScheme = {
+    titles: ["Nombre de Usuario", "Nombre", "Apellido", "Correo", "Roles", "Habilitado"],
+    fields: ["username", "firstName", "lastName", "email", "authorities", "enabled"],
+  }
+  
   return (
     <BreadcrumbSubLayout items={breadcrumbs}>
       <CrudTable<User, UserDto, number, UserFilter>
@@ -179,6 +185,7 @@ export default function UserBasePage(
         table={table}
         operations={operations}
         form={form}
+        exportScheme={exportScheme}
       />
     </BreadcrumbSubLayout>
   );

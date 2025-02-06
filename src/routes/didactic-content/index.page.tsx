@@ -24,6 +24,7 @@ import {
   didacticContentService,
 } from "@/services/didactic-content-service.ts";
 import {useAuth} from "@/context/auth-context.tsx";
+import {ExportScheme} from "@/lib/crud.ts";
 
 export default function DidacticContentPage() {
   
@@ -87,6 +88,10 @@ export default function DidacticContentPage() {
     FormComponent,
   };
   
+  const exportScheme: ExportScheme = {
+    fields: ["title", "content"],
+    titles: ["Título", "Contenido"],
+  }
   return (
     <BreadcrumbSubLayout items={["Contenido Didáctico"]}>
       <CrudTable<DidaticContent, DidaticContentDto, string>
@@ -94,6 +99,7 @@ export default function DidacticContentPage() {
         operations={didacticContentService}
         table={table}
         form={form}
+        exportScheme={exportScheme}
       />
     </BreadcrumbSubLayout>
   );

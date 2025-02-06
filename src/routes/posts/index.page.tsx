@@ -12,6 +12,7 @@ import {useAuth} from "@/context/auth-context.tsx";
 import {format} from "date-fns";
 import {useNavigate} from "react-router";
 import {MessageSquareText} from "lucide-react";
+import {ExportScheme} from "@/lib/crud.ts";
 
 
 export default function PostPage() {
@@ -91,6 +92,11 @@ export default function PostPage() {
     }
   }
   
+  const exportScheme: ExportScheme = {
+    titles: ["Contenido", "Publicado", "Likes", "Comentarios", "Denuncias"],
+    fields: ["content", "createdAt", "likedBy", "comments", "reportedBy"],
+  }
+  
   return (
     <BreadcrumbSubLayout items={["Publicaciones"]}>
       <CrudTable<Post, PostDto, string>
@@ -98,9 +104,11 @@ export default function PostPage() {
         operations={{
           find: postService.find,
           page: postService.page,
+          export: postService.export,
           delete: postService.delete,
         }}
         table={table}
+        exportScheme={exportScheme}
       />
     </BreadcrumbSubLayout>
   );

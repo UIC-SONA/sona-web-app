@@ -45,6 +45,11 @@ export type Sort = {
   direction: Direction;
 };
 
+export type ExportScheme = {
+  titles: string[];
+  fields: string[];
+}
+
 export function defaultPageQuery(size: number = 10): PageQuery {
   return {
     search: "",
@@ -54,9 +59,13 @@ export function defaultPageQuery(size: number = 10): PageQuery {
   };
 }
 
-export type Pageable<T, F = {}> = {
-  page: (query: PageQuery<F>) => Promise<Page<T>>;
+export type Pageable<T, Filter = {}> = {
+  page: (query: PageQuery<Filter>) => Promise<Page<T>>;
 };
+
+export type Exportable<Filter = {}> = {
+  export: (query: PageQuery<Filter>, scheme: ExportScheme) => Promise<Blob>;
+}
 
 export type Findable<T extends Entity<ID>, ID> = {
   find: (id: ID) => Promise<T>;
@@ -83,15 +92,19 @@ export type Deletable<ID> = {
   delete: (id: ID) => Promise<void>;
 };
 
-export type ReadOperations<T extends Entity<ID>, ID, F = {}> = Findable<T, ID> & Pageable<T, F> & Countable & Existable<ID>;
+export type ReadOperations<T extends Entity<ID>, ID, Filter = {}> = Findable<T, ID> & Pageable<T, Filter> & Countable & Existable<ID> & Exportable<Filter>;
 
 export type WriteOperations<T extends Entity<ID>, D, ID> = Creatable<T, D> & Updatable<T, D, ID> & Deletable<ID>;
 
-export type CrudOperations<T extends Entity<ID>, D, ID, F = {}> = ReadOperations<T, ID, F> & WriteOperations<T, D, ID>;
+export type CrudOperations<T extends Entity<ID>, D, ID, Filter = {}> = ReadOperations<T, ID, Filter> & WriteOperations<T, D, ID>;
 
 
-export function isPageable<F>(operations: unknown): operations is Pageable<F> {
-  return (operations as Pageable<F>).page !== undefined;
+export function isPageable<Filter>(operations: unknown): operations is Pageable<Filter> {
+  return (operations as Pageable<Filter>).page !== undefined;
+}
+
+export function isExportable<Filter>(operations: unknown): operations is Exportable<Filter> {
+  return (operations as Exportable<Filter>).export !== undefined;
 }
 
 export function isFindable<T extends Entity<ID>, ID>(operations: unknown): operations is Findable<T, ID> {
@@ -118,7 +131,7 @@ export function isDeletable<ID>(operations: unknown): operations is Deletable<ID
   return (operations as Deletable<ID>).delete !== undefined;
 }
 
-export function isReadOperations<T extends Entity<ID>, ID>(operations: unknown): operations is ReadOperations<T, ID> {
+export function isReadOperations<T extends Entity<ID>, ID, Filter = {}>(operations: unknown): operations is ReadOperations<T, ID, Filter> {
   return isFindable(operations) && isPageable(operations) && isCountable(operations) && isExistable(operations);
 }
 
@@ -126,6 +139,6 @@ export function isWriteOperations<T extends Entity<ID>, D, ID>(operations: unkno
   return isCreatable(operations) && isUpdatable(operations) && isDeletable(operations);
 }
 
-export function isCrudOperations<T extends Entity<ID>, D, ID>(operations: unknown): operations is CrudOperations<T, D, ID> {
+export function isCrudOperations<T extends Entity<ID>, D, ID, Filter>(operations: unknown): operations is CrudOperations<T, D, ID, Filter> {
   return isReadOperations(operations) && isWriteOperations(operations);
 }

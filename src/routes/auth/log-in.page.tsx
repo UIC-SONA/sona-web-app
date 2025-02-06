@@ -26,12 +26,8 @@ import {
   Link,
   useNavigate
 } from "react-router";
-import {
-  useAlertDialog
-} from "@/context/alert-dialog-context";
-import {
-  useLogin
-} from "@/context/auth-context";
+import {useAlertDialog} from "@/context/alert-dialog-context";
+import {useLogin} from "@/context/auth-context";
 import onlyLogo from "@/assets/only_logo.png";
 import {
   introspect
@@ -42,9 +38,9 @@ import PasswordInput from "@/components/ui/password-input.tsx";
 const loginSchema = z.object({
   username: z.string()
   .min(1, "Usuario o correo electrónico es requerido")
-  .max(50, "asdasdsad")
-  ,
-  password: z.string().min(1, "Contraseña es requerida"),
+  .max(50, "asdasdsad"),
+  password: z.string()
+  .min(1, "Contraseña es requerida"),
 });
 
 export default function LogIn() {

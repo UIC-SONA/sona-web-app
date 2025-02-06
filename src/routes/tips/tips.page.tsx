@@ -80,7 +80,7 @@ export default function TipsPage() {
             {
                 header: "Calificación",
                 accessorKey: "averageRate",
-                enableSorting: false,
+                enableSorting: true,
                 cell: ({row}) => {
                     return row.original.averageRate.toFixed(2);
                 }
@@ -88,7 +88,7 @@ export default function TipsPage() {
             {
                 header: "Calificaciones",
                 accessorKey: "totalRate",
-                enableSorting: false,
+                enableSorting: true,
                 cell: ({row}) => {
                     return row.original.totalRate;
                 }

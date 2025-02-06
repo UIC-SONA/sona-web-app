@@ -136,9 +136,9 @@ export function AppointmentPage() {
   }
   
   return (
-    <BreadcrumbSubLayout items={['Citas']}>
+    <BreadcrumbSubLayout items={['Agenda']}>
       <CrudTable<Appointment, any, number, AppointmentFilters>
-        title="Citas"
+        title="Agenda"
         table={table}
         operations={appointmentsService}
         exportScheme={exportScheme}

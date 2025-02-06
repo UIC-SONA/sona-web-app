@@ -34,12 +34,12 @@ import {
 
 
 export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
-
+  
   const {user} = useAuth();
-
-
+  
+  
   const navItems = resolvedNavItems(user);
-
+  
   return (
     <Sidebar collapsible="icon" {...props}>
       <SonaSideBarHeader/>
@@ -84,9 +84,9 @@ function resolvedNavItems(user?: User): NavItem[] {
   if (!user) {
     return [];
   }
-
+  
   const items: NavItem[] = [];
-
+  
   if (userService.hasUser(user, Authority.ADMIN, Authority.ADMINISTRATIVE)) {
     items.push({
         title: "Usuarios",
@@ -122,10 +122,10 @@ function resolvedNavItems(user?: User): NavItem[] {
       },
     );
   }
-
+  
   if (userService.hasUser(user, Authority.LEGAL_PROFESSIONAL, Authority.MEDICAL_PROFESSIONAL, Authority.ADMIN, Authority.ADMINISTRATIVE)) {
     items.push({
-        title: "Citas",
+        title: "Ver Agenda",
         url: "#",
         icon: Calendar,
         items: [
@@ -141,6 +141,6 @@ function resolvedNavItems(user?: User): NavItem[] {
       },
     );
   }
-
+  
   return items;
 }

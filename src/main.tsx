@@ -33,7 +33,7 @@ createRoot(document.getElementById('root')!).render(
     <AlertDialogProvider>
       <AuthProvider>
         <BrowserRouter>
-          <SonaRoutes/>
+          <AppRoutes/>
         </BrowserRouter>
       </AuthProvider>
       <Toaster/>
@@ -41,7 +41,7 @@ createRoot(document.getElementById('root')!).render(
   </ThemeContext>
 );
 
-function SonaRoutes() {
+function AppRoutes() {
   return <Routes>
     <Route element={<AuthGuard hasAuthenticated redirect="/auth/login"/>}>
       <Route element={<MainLayout/>}>

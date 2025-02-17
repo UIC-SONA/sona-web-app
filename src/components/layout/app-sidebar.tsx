@@ -17,7 +17,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import onlyLogo from "@/assets/only_logo.png";
+import onlyLogo from "@/assets/logo-with-background.png";
 import {Separator} from "@/components/ui/separator.tsx";
 import {Link} from "react-router";
 import {
@@ -42,7 +42,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SonaSideBarHeader/>
+      <AppSideBarHeader/>
       <SidebarContent>
         <NavMain items={navItems}/>
       </SidebarContent>
@@ -55,7 +55,7 @@ export function AppSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
   )
 }
 
-export function SonaSideBarHeader() {
+export function AppSideBarHeader() {
   return <SidebarHeader>
     <SidebarMenu>
       <SidebarMenuItem>
@@ -69,9 +69,9 @@ export function SonaSideBarHeader() {
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight">
             <span className="truncate font-semibold">
-              SONA
+              WARMI-PL
             </span>
-              <span className="truncate text-xs">Bienvenido a <b>SONA</b></span>
+              <span className="truncate text-xs">Bienvenido a <b>WARMI</b></span>
             </div>
           </SidebarMenuButton>
         </Link>

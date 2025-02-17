@@ -1,5 +1,4 @@
 import {
-  BadgeCheck,
   ChevronsUpDown,
   LogOut,
   MessageSquare,
@@ -42,8 +41,8 @@ export function NavUser({user}: Readonly<NavUserProps>) {
   const {isMobile} = useSidebar()
   const {logoutUser} = useAuth();
   const {pushAlertDialog} = useAlertDialog();
-
-
+  
+  
   const logoutHandler = async () => {
     pushAlertDialog({
       type: "question",
@@ -52,7 +51,7 @@ export function NavUser({user}: Readonly<NavUserProps>) {
       onConfirm: logoutUser
     })
   }
-
+  
   return <SidebarMenu>
     <SidebarMenuItem>
       <DropdownMenu>
@@ -78,10 +77,6 @@ export function NavUser({user}: Readonly<NavUserProps>) {
           </DropdownMenuLabel>
           <DropdownMenuSeparator/>
           <DropdownMenuGroup>
-            <DropdownMenuItem>
-              <BadgeCheck/>
-              Perfil
-            </DropdownMenuItem>
             <Link to="/chat">
               <DropdownMenuItem>
                 <MessageSquare/>

@@ -85,7 +85,7 @@ export default function LogIn() {
           <div className="md:hidden mb-4">
             <img src={onlyLogo} alt="Logo" className="w-1/2 mx-auto mb-8"/>
           </div>
-          Inicia sesión con tu cuenta de SONA
+          Inicia sesión con tu cuenta de WARMI PL
         </CardDescription>
       </CardHeader>
       <CardContent>

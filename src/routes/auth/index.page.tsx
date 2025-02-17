@@ -7,7 +7,7 @@ export default function AuthPage() {
     <div className="min-h-screen flex">
       <div className="md:w-1/2  p-8 bg-primary rounded-r-[1.5rem] hidden md:flex flex-col justify-center items-center border-2">
         <h1 className="text-3xl font-bold text-primary-foreground mb-4">
-          Bienvenido a SONA!
+          Bienvenido a WARMI PL!
         </h1>
         <img src={onlyLogo} alt="Logo" className="w-1/2 mx-auto mb-8"/>
       </div>

@@ -25,23 +25,19 @@ export function getPeriod(number?: number): string {
   return number < 12 ? "AM" : "PM";
 }
 
-export function onlyDate(value: DateValue): Date {
-  return new Date(value.year, value.month - 1, value.day);
-}
-
 interface QueryParams {
   [key: string]: string | number | boolean;
 }
 
 export function buildUrl(baseUrl: string, route: string, params?: QueryParams): string {
   const url = new URL(route, baseUrl);
-
+  
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       url.searchParams.append(key, value.toString());
     });
   }
-
+  
   return url.toString();
 }
 

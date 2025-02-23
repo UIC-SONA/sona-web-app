@@ -37,7 +37,6 @@ export default function ThemeContext(
         .matches
         ? "dark"
         : "light"
-
       root.classList.add(systemTheme)
       return
     }

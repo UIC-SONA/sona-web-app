@@ -9,6 +9,7 @@ interface ScrollState {
 interface UseAutoScrollOptions {
   offset?: number;
   smooth?: boolean;
+  
   content?: React.ReactNode;
 }
 

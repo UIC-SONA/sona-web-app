@@ -109,12 +109,12 @@ interface ImageWithDialogProps {
 }
 
 function ImageWithDialog({src}: Readonly<ImageWithDialogProps>) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  const toggleDialog = () => setIsOpen(!isOpen);
+  const toggleDialog = () => setOpen(!open);
 
   return (
-    <Dialog open={isOpen} onOpenChange={toggleDialog}>
+    <Dialog open={open} onOpenChange={toggleDialog}>
       <DialogTrigger asChild>
         <div className="relative w-64 h-64 cursor-pointer">
           <img

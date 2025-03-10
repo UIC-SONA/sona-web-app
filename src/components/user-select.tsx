@@ -25,6 +25,7 @@ export default function UserSelect(
       searchPlaceholder={searchPlaceholder}
       className="w-full"
       value={value}
+      
       fetchItems={async (search) => {
         const users = await userService.page({
           search,
@@ -34,6 +35,7 @@ export default function UserSelect(
         });
         return users.content;
       }}
+      
       comboboxItem={(user) => ({
         value: user.id.toString(),
         label: `${user.firstName} ${user.lastName}`

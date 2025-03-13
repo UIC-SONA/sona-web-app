@@ -142,7 +142,6 @@ function FormComponent({form, entity}: Readonly<FormComponentProps<DidaticConten
         name="image"
         render={({field}) => {
           const {value, onChange, ...props} = field;
-          
           return (
             <FormItem
               className="sm:col-span-2 lg:col-span-4 flex flex-col sm:flex-row sm:items-center sm:space-x-4">

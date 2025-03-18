@@ -26,9 +26,11 @@ import {
 import {useAuth} from "@/context/auth-context.tsx";
 import {ExportScheme} from "@/lib/crud.ts";
 
+
 export default function DidacticContentPage() {
   
   const {authenticated} = useAuth();
+  
   if (!authenticated) return null;
   
   const table: TableFactory<DidaticContent, string> = {
@@ -92,6 +94,7 @@ export default function DidacticContentPage() {
     fields: ["title", "content"],
     titles: ["Título", "Contenido"],
   }
+  
   return (
     <BreadcrumbSubLayout items={["Contenido Didáctico"]}>
       <CrudTable<DidaticContent, DidaticContentDto, string>

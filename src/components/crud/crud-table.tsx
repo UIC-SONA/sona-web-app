@@ -1,24 +1,26 @@
 import {
   CrudOperations,
-  Entity, ExportScheme,
+  Entity,
+  ExportScheme,
   PageQuery,
   Sort,
 } from "@/lib/crud.ts";
 import {
-  ComponentType, ReactNode,
+  ComponentType,
+  ReactNode,
   useEffect,
   useState
 } from "react";
 import {
   ColumnDef,
   ColumnSort,
-  SortDirection,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   PaginationState,
+  SortDirection,
   SortingState,
   Table,
   useReactTable,
@@ -41,8 +43,10 @@ import {
   EditIcon,
   EllipsisVerticalIcon,
   EyeIcon,
-  LoaderCircle, LucideIcon,
-  PlusIcon, SaveIcon,
+  LoaderCircle,
+  LucideIcon,
+  PlusIcon,
+  SaveIcon,
   SearchIcon,
   TrashIcon,
 } from "lucide-react";
@@ -68,24 +72,22 @@ import {
 } from "@/components/crud/crud-forms.tsx";
 import {CrudSchema, Schema} from "@/components/crud/crud-common.ts";
 import {DefaultValues} from "react-hook-form";
+import useLoadingTable, {LoadingTableState} from "@/components/crud/crud-hooks.ts";
+import {
+  FilterComponentProps,
+  FilterState
+} from "@/components/crud/crud-table-filters.ts";
 
 const perPage = [5, 10, 25, 50, 100];
 
-export interface FilterComponentProps<E> {
-  filters: FilterState<keyof E, E>,
-}
+const sortingStateToParams = (sortingState: SortingState): Sort[] => {
+  if (!sortingState.length) return [];
+  return sortingState.map<Sort>(({id, desc}: ColumnSort) => ({
+    property: id,
+    direction: desc ? 'desc' : 'asc',
+  }));
+};
 
-interface FilterState<K extends keyof E, E> {
-  values: Partial<E>;
-  
-  set(key: K, value?: E[K]): void;
-  
-  get(key: K): E[K] | undefined;
-  
-  clear(): void;
-  
-  loading: boolean;
-}
 
 export interface FormFactory<TData extends Entity<ID>, Dto, ID> {
   update?: {
@@ -105,7 +107,6 @@ export interface TableFactory<TData extends Entity<ID>, ID, E = {}> {
   entityActions?: (data: TData, reload: () => void) => EntityAction[];
 }
 
-
 export type CrudTableProps<TData extends Entity<ID>, Dto, ID, E = {}> = {
   title: ReactNode;
   operations: Partial<CrudOperations<TData, Dto, ID, E>>;
@@ -114,18 +115,7 @@ export type CrudTableProps<TData extends Entity<ID>, Dto, ID, E = {}> = {
   exportScheme?: ExportScheme;
 }
 
-interface PaginationInfo {
-  totalPages: number;
-  totalElements: number;
-}
-
-
-export default function CrudTable<
-  TData extends Entity<ID>,
-  Dto,
-  ID,
-  Filters = {}
->({title, table, operations, form, exportScheme}: Readonly<CrudTableProps<TData, Dto, ID, Filters>>) {
+export default function CrudTable<TData extends Entity<ID>, Dto, ID, Filters = {}>({title, table, operations, form, exportScheme}: Readonly<CrudTableProps<TData, Dto, ID, Filters>>) {
   return <CrudOperationsTable<TData, Dto, ID, Filters>
     title={title}
     table={table}
@@ -135,12 +125,7 @@ export default function CrudTable<
   />
 }
 
-interface CrudOperationsTableProp<
-  TData extends Entity<ID>,
-  Dto,
-  ID,
-  Filters = {}
-> extends Partial<CrudOperations<TData, Dto, ID, Filters>> {
+interface CrudOperationsTableProp<TData extends Entity<ID>, Dto, ID, Filters = {}> extends Partial<CrudOperations<TData, Dto, ID, Filters>> {
   title: ReactNode;
   table: TableFactory<TData, ID, Filters>;
   form?: FormFactory<TData, Dto, ID>;
@@ -173,51 +158,19 @@ function CrudOperationsTable<
   const {pushAlertDialog} = useAlertDialog();
   
   const [data, setData] = useState<TData[]>([]);
-  const [pagination, setPagination] = useState<PaginationState>({pageIndex: 0, pageSize: 20});
-  const [paginationInfo, setPaginationInfo] = useState<PaginationInfo>({totalPages: 0, totalElements: 0});
+  const [pagination, setPagination] = useState<PaginationState & { totalPages: number; totalElements: number; }>({pageIndex: 0, pageSize: 20, totalPages: 0, totalElements: 0});
   const [sorting, setSorting] = useState<SortingState>([]);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<Partial<Filters>>({});
   
-  const [loading, setLoading] = useState(true);
-  const [loadingSearch, setLoadingSearch] = useState(false);
-  const [loadingNextPagination, setLoadingNextPagination] = useState(false);
-  const [loadingBackPagination, setLoadingBackPagination] = useState(false);
-  const [loadingPageSize, setLoadingPageSize] = useState(false);
-  const [loadingFilters, setLoadingFilters] = useState(false);
-  const [sortingColumn, setSortingColumn] = useState<string | undefined>();
-  
-  const anyLoading = loading
-    || loadingNextPagination
-    || loadingBackPagination
-    || loadingSearch
-    || loadingPageSize
-    || sortingColumn !== undefined
-  
-  const getSortParams = () => {
-    if (!sorting.length) return [];
-    return sorting.map<Sort>(({id, desc}: ColumnSort) => ({
-      property: id,
-      direction: desc ? 'desc' : 'asc',
-    }));
-  };
-  
-  const setLoadings = (loading: boolean) => {
-    setLoading(loading);
-    setLoadingNextPagination(loading);
-    setLoadingBackPagination(loading);
-    setLoadingSearch(loading);
-    setLoadingPageSize(loading);
-    setLoadingFilters(loading);
-    setSortingColumn(undefined);
-  }
+  const {isLoading, loadingTable, setLoadingTable, cancelLoading, columnSorting, setColumnSorting} = useLoadingTable();
   
   const getPageQuery: () => PageQuery<Filters> = () => {
     return {
       search,
       page: pagination.pageIndex,
       size: pagination.pageSize,
-      sorts: getSortParams(),
+      sorts: sortingStateToParams(sorting),
       filters,
     };
   }
@@ -225,28 +178,20 @@ function CrudOperationsTable<
   const fetchData = async () => {
     if (!page) return;
     try {
-      
-      const query: PageQuery<Filters> = getPageQuery();
+      const query = getPageQuery();
       const results = await page(query);
       
       setData(results.content);
       setPagination({
         pageSize: results.page.size,
         pageIndex: results.page.number,
-      });
-      setPaginationInfo({
         totalPages: results.page.totalPages,
         totalElements: results.page.totalElements,
       });
-      
     } catch (error) {
-      //
-      const {title, description} = introspect(error);
-      pushAlertDialog({type: "error", title, description});
-      //
+      pushAlertDialog({type: "error", ...introspect(error)});
     } finally {
-      //
-      setLoadings(false);
+      cancelLoading();
     }
   };
   
@@ -256,7 +201,8 @@ function CrudOperationsTable<
     if (!hasExport) return;
     
     try {
-      const query: PageQuery<Filters> = getPageQuery();
+      
+      const query = getPageQuery();
       const blob = await exportFn(query, exportScheme);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -275,7 +221,7 @@ function CrudOperationsTable<
   }
   
   useEffect(() => {
-    setLoading(true);
+    setLoadingTable(LoadingTableState.LoadingData);
     loadData();
   }, []);
   
@@ -288,59 +234,60 @@ function CrudOperationsTable<
   useEffect(() => {
     if (isFirstRender) return;
     const handler = setTimeout(() => {
-      setLoadingSearch(true);
+      setLoadingTable(LoadingTableState.LoadingSearch)
       loadData();
     }, 500);
     
     return () => clearTimeout(handler);
   }, [search]);
   
-  
   const useFormInTable =
     deleteFn != undefined
     || (update != undefined && form?.update != undefined)
     || (entityActions != undefined);
   
+  const onPaginationChange = (updater: PaginationState | ((old: PaginationState) => PaginationState)) => {
+    setPagination((pagination) => ({
+      ...pagination,
+      ...(typeof updater === "function" ? updater(pagination) : updater),
+    }));
+  }
+  
   const table = useReactTable({
     data,
     columns,
-    initialState: {
-      columnVisibility: {
-        id: false,
-      },
-    },
+    manualPagination: true,
+    manualSorting: true,
     state: {
       sorting,
       pagination,
     },
     onSortingChange: setSorting,
-    onPaginationChange: setPagination,
+    onPaginationChange: onPaginationChange,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    manualPagination: true,
-    manualSorting: true,
-    pageCount: paginationInfo.totalPages,
+    pageCount: pagination.totalPages,
   });
   
   const nextPage = () => {
-    setLoadingNextPagination(true);
+    setLoadingTable(LoadingTableState.LoadingNextPagination);
     table.nextPage();
   };
   
   const previousPage = () => {
-    setLoadingBackPagination(true);
+    setLoadingTable(LoadingTableState.LoadingBackPagination);
     table.previousPage();
   };
   
   const setPageSize = (size: number) => {
-    setLoadingPageSize(true);
+    setLoadingTable(LoadingTableState.LoadingPageSize);
     table.setPageSize(size);
   }
   
   const reload = () => {
-    setLoading(true);
+    setLoadingTable(LoadingTableState.LoadingData);
     if (table.getState().pagination.pageIndex === 0) {
       loadData();
     } else {
@@ -350,18 +297,23 @@ function CrudOperationsTable<
   
   const clearFilters = () => {
     if (Object.keys(filters).length === 0) return;
-    setLoadingFilters(true);
+    setLoadingTable(LoadingTableState.LoadingFilters);
     setFilters({});
   }
   
   const setFilter = (key: keyof Filters, value?: Filters[keyof Filters]) => {
-    setLoadingFilters(true);
+    setLoadingTable(LoadingTableState.LoadingFilters);
     setFilters((prev) => ({...prev, [key]: value}));
   }
   
   const getFilter = (key: keyof Filters): Filters[keyof Filters] | undefined => {
     return filters[key];
   }
+  
+  const loadingData = loadingTable === LoadingTableState.LoadingData;
+  const loadingNextPagination = loadingTable === LoadingTableState.LoadingNextPagination;
+  const loadingBackPagination = loadingTable === LoadingTableState.LoadingBackPagination;
+  const loadingFilters = loadingTable === LoadingTableState.LoadingFilters;
   
   const filterState: FilterState<keyof Filters, Filters> = {
     values: filters,
@@ -378,14 +330,14 @@ function CrudOperationsTable<
         <IntelliSearch
           value={search}
           onSearch={setSearch}
-          loading={loadingSearch}
+          loading={loadingTable === LoadingTableState.LoadingSearch}
           className="col-span-1 sm:col-span-2 lg:col-span-4"
         />
         <div className="col-span-1 sm:col-span-2 lg:col-span-3 flex items-center justify-end space-x-2">
           <DropdownPerPage
             pageSize={table.getState().pagination.pageSize}
             onPageSizeChange={setPageSize}
-            loading={loadingPageSize}
+            loading={loadingTable === LoadingTableState.LoadingPageSize}
           />
           <DropdownVisibleColumns
             table={table}
@@ -393,7 +345,7 @@ function CrudOperationsTable<
           {hasExport && <Button
             variant="outline"
             onClick={exportData}
-            disabled={anyLoading}
+            disabled={isLoading}
           >
             <SaveIcon/>
           </Button>}
@@ -416,7 +368,6 @@ function CrudOperationsTable<
           <TableHeader className="bg-primary bg-opacity-50">
             {table.getHeaderGroups().map((headerGroup) => {
               const headClassName = "font-bold text-primary-foreground";
-              
               return (
                 <TableRow key={headerGroup.id} className="hover:bg-primary">
                   {headerGroup.headers.map((header) => {
@@ -432,13 +383,13 @@ function CrudOperationsTable<
                               variant="ghost"
                               className="font-bold"
                               onClick={() => {
-                                setSortingColumn(column.id);
+                                setColumnSorting(column.id);
                                 column.toggleSorting();
                               }}
-                              disabled={anyLoading}
+                              disabled={isLoading}
                             >
                               {headerToRender}
-                              <SortIcon isSorted={column.getIsSorted()} sorting={sortingColumn === column.id}/>
+                              <SortIcon isSorted={column.getIsSorted()} sorting={columnSorting === column.id}/>
                             </Button>, header.getContext())}
                         </TableHead>
                       )
@@ -456,51 +407,28 @@ function CrudOperationsTable<
             })}
           </TableHeader>
           <TableBody>
-            {loading && <TableRow>
-              <TableCell colSpan={columns.length + (useFormInTable ? 1 : 0)} className="h-24 text-center">
-                <div className="flex items-center justify-center space-x-2 flex-col">
-                  <LoaderCircle className="animate-spin"/>
-                  Cargando...
-                </div>
-              </TableCell>
-            </TableRow>}
-            {!loading && table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => {
-                return <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                  
-                  {useFormInTable && <EntityActions
-                    entity={row.original}
-                    form={form}
-                    reload={reload}
-                    delete={deleteFn}
-                    update={update}
-                    entityActions={entityActions}
-                  />}
-                </TableRow>
-              })
-            ) : (
-              !isFirstRender && <TableRow>
-                <TableCell colSpan={columns.length + (useFormInTable ? 1 : 0)} className="h-24 text-center">
-                  No hay datos
-                </TableCell>
-              </TableRow>
-            )}
+            <CrudTableBody<TData, ID>
+              loading={loadingData}
+              table={table}
+              columns={columns}
+              {...{
+                aditionalCell: !useFormInTable ? undefined : entity => <EntityActions
+                  entity={entity}
+                  form={form}
+                  reload={reload}
+                  delete={deleteFn}
+                  update={update}
+                  entityActions={entityActions}
+                />
+              }}
+            />
           </TableBody>
         </TableComponent>
       </div>
       <div className="flex items-center justify-between mt-4">
         <span className="text-sm text-muted-foreground">
-          Total de registros: <b>{paginationInfo.totalElements}</b>
+          Total de registros: <b>{pagination.totalElements}</b>
         </span>
-        
         {table.getPageCount() > 0 &&
           <div className="space-x-2">
                 <span className="text-sm text-muted-foreground">
@@ -510,7 +438,7 @@ function CrudOperationsTable<
               variant="outline"
               size="sm"
               onClick={previousPage}
-              disabled={!table.getCanPreviousPage() || anyLoading}
+              disabled={!table.getCanPreviousPage() || isLoading}
             >
               {loadingBackPagination
                 ? <LoaderCircle className="animate-spin"/>
@@ -521,7 +449,7 @@ function CrudOperationsTable<
               variant="outline"
               size="sm"
               onClick={nextPage}
-              disabled={!table.getCanNextPage() || anyLoading}
+              disabled={!table.getCanNextPage() || isLoading}
             >
               {loadingNextPagination
                 ? <LoaderCircle className="animate-spin"/>
@@ -530,8 +458,69 @@ function CrudOperationsTable<
             </Button>
           </div>}
       </div>
-    </div>)
-    ;
+    </div>);
+}
+
+interface CrudTableBodyProps<TData extends Entity<ID>, ID> {
+  loading: boolean;
+  table: Table<TData>,
+  columns: ColumnDef<TData>[],
+  aditionalCell?: (entity: TData) => ReactNode,
+}
+
+
+function CrudTableBody<TData extends Entity<ID>, ID>(
+  {
+    loading,
+    table,
+    columns,
+    aditionalCell
+  }: Readonly<CrudTableBodyProps<TData, ID>>
+) {
+  if (loading) return (
+    <TableRow>
+      <TableCell colSpan={columns.length + (aditionalCell ? 1 : 0)} className="h-24 text-center">
+        <div className="flex items-center justify-center space-x-2 flex-col">
+          <LoaderCircle className="animate-spin"/>
+          Cargando...
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+  
+  const rows = table.getRowModel().rows;
+  
+  if (rows.length === 0) return (
+    <TableRow>
+      <TableCell colSpan={columns.length + (aditionalCell ? 1 : 0)} className="h-24 text-center">
+        No hay datos
+      </TableCell>
+    </TableRow>
+  );
+  
+  return <>
+    {table.getRowModel().rows.map((row) => {
+      return <TableRow
+        key={row.id}
+        data-state={row.getIsSelected() && "selected"}
+      >
+        
+        {row.getVisibleCells().map((cell) => (
+          <TableCell key={cell.id}>
+            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+          </TableCell>
+        ))}
+        
+        {aditionalCell && <TableCell className="sticky right-0 bg-background">
+          <div className="absolute left-0 top-0 h-full w-px border-l"></div>
+          <div className="flex items-center justify-center h-full">
+            {aditionalCell(row.original)}
+          </div>
+        </TableCell>}
+      
+      </TableRow>
+    })}
+  </>
 }
 
 function SortIcon({isSorted, sorting}: Readonly<{ isSorted: false | SortDirection, sorting: boolean }>) {
@@ -700,9 +689,7 @@ function EntityActions<TData extends Entity<ID>, Dto, ID>(
       )}
       <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
         <DropdownMenuTrigger asChild>
-          <TableCell className="text-right">
-            <EllipsisVerticalIcon/>
-          </TableCell>
+          <EllipsisVerticalIcon className="hover:cursor-pointer"/>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Acciones</DropdownMenuLabel>

@@ -65,7 +65,6 @@ export interface FormConfig<TData, Dto> {
   FormComponent: ComponentType<FormComponentProps<TData, Dto>>,
 }
 
-
 interface BaseFormProps {
   open: boolean,
   setOpen: Dispatch<SetStateAction<boolean>>,
@@ -101,7 +100,7 @@ export async function dispatchSubmitAction(form: UseFormReturn<any>, action: () 
     await action();
   } catch (error) {
     const problemDetails = extractProblemDetails(error);
-
+    
     if (problemDetails) {
       if ('errors' in problemDetails) {
         const errors = problemDetails.errors as ValidationError[];
@@ -140,20 +139,20 @@ function CommonForm<TData, Dto>(
     onCancel,
   }: Readonly<CommonFormProps<TData, Dto>>
 ) {
-
-
+  
+  
   const {toast} = useToast();
   const [loading, setLoading] = useState(false);
-
+  
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: defaultValues,
   });
-
+  
   useEffect(() => {
     form.reset(defaultValues);
   }, [defaultValues, form, open]);
-
+  
   async function onSubmit(values: Schema<Dto>) {
     console.log(values);
     setLoading(true);
@@ -168,20 +167,20 @@ function CommonForm<TData, Dto>(
       setLoading(false);
     }
   }
-
+  
   const onOpenChange = (open: boolean) => {
     if (loading) return;
     setOpen(open);
     onCancel?.();
   }
-
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={true}>
       <DialogContent
         className="max-w-[80vw] max-h-[80vh] overflow-y-auto"
         onInteractOutside={(e) => e.preventDefault()}
       >
-
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} autoComplete="off">
             <RequestErrorFormAlertDialog
@@ -196,7 +195,7 @@ function CommonForm<TData, Dto>(
                 {description}
               </DialogDescription>
             </DialogHeader>
-
+            
             <FormComponent form={form} entity={entity}/>
             
             <DialogFooter className="justify-end mt-4">
@@ -216,7 +215,7 @@ function CommonForm<TData, Dto>(
             </DialogFooter>
           </form>
         </Form>
-
+      
       </DialogContent>
     </Dialog>
   );
@@ -256,7 +255,7 @@ export function UpdateForm<TData extends Entity<ID>, Dto, ID>(
     ...props
   }: Readonly<UpdateFormProps<TData, Dto, ID>>
 ) {
-
+  
   return (
     <CommonForm
       title={title || "Editar"}
@@ -291,20 +290,20 @@ export function DeleteForm<TData extends Entity<ID>, ID>(
     delete: deleteFn,
   }: Readonly<DeleteFormProps<TData, ID>>
 ) {
-
+  
   const {toast} = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<GlobalError | undefined>();
-
+  
   const deleteHandle = async () => {
-
+    
     if (!entity) {
       console.warn("Entity is undefined");
       return;
     }
-
+    
     setLoading(true);
-
+    
     try {
       await deleteFn(entity.id);
       onSuccess?.();
@@ -317,7 +316,7 @@ export function DeleteForm<TData extends Entity<ID>, ID>(
       setLoading(false);
     }
   }
-
+  
   return (
     <>
       <ErrorAlertDialog
@@ -358,7 +357,7 @@ export function DeleteForm<TData extends Entity<ID>, ID>(
 
 
 export function RequestErrorFormAlertDialog({form, onClose}: Readonly<{ form: UseFormReturn<any>, onClose?: () => void }>) {
-
+  
   const requestError = form.formState.errors.root?.["requestError"];
   return (
     <ErrorAlertDialog

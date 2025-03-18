@@ -22,7 +22,7 @@ import DatePicker from "@/components/ui/date/date-picker.tsx";
 import {CalendarDate} from "@internationalized/date";
 import {ZONE_ID} from "@/constans.ts";
 import {
-  AreaData,
+  AreaData, AreaSeries,
   AreaSeriesPartialOptions,
   ChartOptions,
   ColorType,
@@ -58,26 +58,26 @@ import {useSidebar} from "@/components/ui/sidebar.tsx";
 
 export default function Dashboard() {
   const {user} = useAuth();
-
+  
   return (
     <BreadcrumbSubLayout items={[]}>
       <h1 className="text-2xl font-semibold mb-3.5">Dashboard</h1>
       {user && <Tabs defaultValue="appointments">
-          <TabsList>
-              <TabsTrigger value="appointments">Citas</TabsTrigger>
-              <TabsTrigger value="posts">Publicaciones</TabsTrigger>
-              <TabsTrigger value="tips">Tips</TabsTrigger>
-          </TabsList>
-          <Separator className="my-3"/>
-          <TabsContent value="appointments">
-              <AppointmensCharts user={user}/>
-          </TabsContent>
-          <TabsContent value="posts">
-              <TopPosts/>
-          </TabsContent>
-          <TabsContent value="tips">
-              <Tips/>
-          </TabsContent>
+        <TabsList>
+          <TabsTrigger value="appointments">Citas</TabsTrigger>
+          <TabsTrigger value="posts">Publicaciones</TabsTrigger>
+          <TabsTrigger value="tips">Tips</TabsTrigger>
+        </TabsList>
+        <Separator className="my-3"/>
+        <TabsContent value="appointments">
+          <AppointmensCharts user={user}/>
+        </TabsContent>
+        <TabsContent value="posts">
+          <TopPosts/>
+        </TabsContent>
+        <TabsContent value="tips">
+          <Tips/>
+        </TabsContent>
       </Tabs>}
     </BreadcrumbSubLayout>
   );
@@ -87,7 +87,7 @@ export default function Dashboard() {
 function Tips() {
   const [tips, setTips] = useState<Tip[]>([]);
   const [loading, setLoading] = useState(true);
-
+  
   const loadTips = async () => {
     setLoading(true);
     try {
@@ -97,11 +97,11 @@ function Tips() {
       setLoading(false);
     }
   }
-
+  
   useEffect(() => {
     loadTips();
   }, []);
-
+  
   return (
     <Card>
       <CardHeader>
@@ -128,7 +128,7 @@ function Tips() {
 function TopPosts() {
   const [topPostsDto, setTopPostsDto] = useState<TopPostsDto | undefined>();
   const [loading, setLoading] = useState(true);
-
+  
   const loadTopPosts = async () => {
     setLoading(true);
     try {
@@ -138,11 +138,11 @@ function TopPosts() {
       setLoading(false);
     }
   }
-
+  
   useEffect(() => {
     loadTopPosts();
   }, []);
-
+  
   return (
     <Card>
       <CardHeader>
@@ -169,7 +169,7 @@ function TopPosts() {
         </div>
       </CardContent>
       <CardFooter>
-
+      
       </CardFooter>
     </Card>
   );
@@ -186,11 +186,11 @@ function PostView({
   loading: boolean,
   emptyMessage?: string
 }>) {
-
+  
   const hasAuthor = post?.author != null;
   const [author, setAuthor] = useState<User | undefined>();
   const [authorLoading, setAuthorLoading] = useState(true);
-
+  
   useEffect(() => {
     setAuthorLoading(true);
     if (hasAuthor) {
@@ -199,8 +199,8 @@ function PostView({
       setAuthorLoading(false);
     }
   }, [hasAuthor]);
-
-
+  
+  
   const buildAuthorSection = () => {
     if (authorLoading) {
       return (
@@ -221,7 +221,7 @@ function PostView({
       <p className="text-muted-foreground">Autor anónimo</p>
     </div>
   }
-
+  
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
@@ -236,11 +236,11 @@ function PostView({
             <LoaderCircle className="w-5 h-5 animate-spin"/>
           </div>
         )}
-
+        
         {!loading && !post && (
           <p className="text-muted-foreground">{emptyMessage}</p>
         )}
-
+        
         {!loading && post && (
           <div className="space-y-2">
             <p className="text-sm">{post.content}</p>
@@ -300,7 +300,7 @@ const appointmenAreaConfig: AreaSeriesPartialOptions = {
 function AppointmensCharts({user}: Readonly<{ user: User }>) {
   const hasPrivileged = userService.hasPrivilegedUser(user);
   const currentYear = new Date().getFullYear();
-
+  
   const [professionalType, setProfessionalType] = useState<Authority.LEGAL_PROFESSIONAL | Authority.MEDICAL_PROFESSIONAL | undefined>();
   const [professional, setProfessional] = useState<User | undefined>();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -308,10 +308,10 @@ function AppointmensCharts({user}: Readonly<{ user: User }>) {
   const [from, setFrom] = useState<CalendarDate | null>(new CalendarDate(currentYear, 1, 1));
   const [to, setTo] = useState<CalendarDate | null>(new CalendarDate(currentYear, 12, 31));
   const [groupMode, setGroupMode] = useState<GroupMode>(GroupMode.DAY);
-
+  
   const fromZoned = from?.toDate(ZONE_ID);
   const toZoned = to?.toDate(ZONE_ID);
-
+  
   const loadAppointments = async () => {
     setLoading(true);
     try {
@@ -329,41 +329,41 @@ function AppointmensCharts({user}: Readonly<{ user: User }>) {
       setLoading(false);
     }
   };
-
+  
   useEffect(() => {
     loadAppointments();
   }, [from, to, professional, professionalType]);
-
+  
   const range = {from: fromZoned, to: toZoned};
-
+  
   const [allData, presentialData, virtualData] = useMemo(() => [
     appointmentsToData(appointments, groupMode, range),
     appointmentsToData(appointments.filter(a => a.type === AppointmentType.PRESENTIAL), groupMode, range),
     appointmentsToData(appointments.filter(a => a.type === AppointmentType.VIRTUAL), groupMode, range),
   ], [appointments, from, to, groupMode]);
-
+  
   return (
     <Card>
       <CardContent>
         <div className="flex flex-wrap gap-4 items-center justify-center my-5">
           {(user && userService.hasPrivilegedUser(user)) && <>
-              <SelectProfessionalType
-                  value={professionalType}
-                  onChange={setProfessionalType}
-                  disabled={professional !== undefined}
+            <SelectProfessionalType
+              value={professionalType}
+              onChange={setProfessionalType}
+              disabled={professional !== undefined}
+            />
+            <div className="w-60">
+              <UserSelect
+                key={professionalType}
+                selectItemText="Profesional"
+                searchPlaceholder="Buscar profesional"
+                value={professional}
+                onSelect={setProfessional}
+                filters={{
+                  authorities: professionalType ? [professionalType] : userService.professionalAuthorities,
+                }}
               />
-              <div className="w-60">
-                  <UserSelect
-                      key={professionalType}
-                      selectItemText="Profesional"
-                      searchPlaceholder="Buscar profesional"
-                      value={professional}
-                      onSelect={setProfessional}
-                      filters={{
-                        authorities: professionalType ? [professionalType] : userService.professionalAuthorities,
-                      }}
-                  />
-              </div>
+            </div>
           </>}
           <div className="grid gap-2">
             <DatePicker<CalendarDate>
@@ -385,7 +385,7 @@ function AppointmensCharts({user}: Readonly<{ user: User }>) {
             <SelectGroupMode value={groupMode} onChange={setGroupMode}/>
           </div>
         </div>
-
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="col-span-1 md:col-span-2">
             <AppointmentsAreaChart
@@ -451,7 +451,7 @@ function SelectProfessionalType({value, onChange, disabled}: Readonly<SelectProf
 const crossHairAppointmentCountUpdater = (series: ISeriesApi<"Area">, groupMode: GroupMode, updater: (value: string) => void) => {
   return (param: any) => {
     const serie: AreaData | undefined = param.seriesData.get(series);
-
+    
     if (serie && typeof serie.time === 'string') {
       const date = new Date(serie.time);
       const formattedDate = {
@@ -464,7 +464,7 @@ const crossHairAppointmentCountUpdater = (series: ISeriesApi<"Area">, groupMode:
           day: 'numeric',
         }),
       }[groupMode] || 'Fecha';
-
+      
       updater(`${formattedDate}: ${serie.value} citas`);
     }
   };
@@ -478,52 +478,52 @@ interface AppointmentsAreaChartProps {
 }
 
 function AppointmentsAreaChart({title, loading, data, groupMode}: Readonly<AppointmentsAreaChartProps>) {
-
+  
   const {open} = useSidebar();
   const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const legendContainerRef = useRef<HTMLParagraphElement | null>(null);
   const [chart, setChart] = useState<ReturnType<typeof createChart> | null>(null);
-
-
+  
+  
   useEffect(() => {
     const current = chartContainerRef.current;
     if (!current) return;
-
+    
     const handleResize = () => {
       chart.applyOptions({width: current.clientWidth,});
     };
-
+    
     const chart = createChart(current, {
       ...chartConfig,
       width: current.clientWidth,
     });
-
+    
     setChart(chart);
     chart.timeScale().fitContent();
-
-    const series = chart.addAreaSeries(appointmenAreaConfig);
+    
+    const series = chart.addSeries(AreaSeries, appointmenAreaConfig);
     series.setData(data);
-
+    
     window.addEventListener('resize', handleResize);
-
+    
     chart.subscribeCrosshairMove(crossHairAppointmentCountUpdater(series, groupMode, (value) => {
       legendContainerRef.current!.textContent = value;
     }));
-
+    
     return () => {
       window.removeEventListener('resize', handleResize);
       chart.remove();
     };
   }, [data]);
-
+  
   useEffect(() => {
     const current = chartContainerRef.current;
     if (chart && current) {
       chart.applyOptions({width: current.clientWidth,});
-
+      
     }
   }, [open]);
-
+  
   return (
     <Card>
       <CardHeader>
@@ -588,12 +588,12 @@ function appointmentsToData(
 ): AreaData[] {
   const now = new Date();
   const effectiveTo = range.to && range.to > now ? now : range.to;
-
+  
   const sorted = [...appointments].sort((a, b) => a.date.getTime() - b.date.getTime());
-
+  
   const groupedData = new Map<string, number>();
   const dateGenerator = createDateGenerator(groupMode);
-
+  
   const {from} = range;
   if (from && effectiveTo) {
     let currentDate = new Date(from);
@@ -603,15 +603,15 @@ function appointmentsToData(
       currentDate = getNextDate(currentDate, groupMode);
     }
   }
-
+  
   sorted.forEach(appointment => {
     const groupKey = dateGenerator(appointment.date);
     groupedData.set(groupKey, (groupedData.get(groupKey) ?? 0) + 1);
   });
-
+  
   return Array
-    .from(groupedData, ([time, value]) => ({time, value}))
-    .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+  .from(groupedData, ([time, value]) => ({time, value}))
+  .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
 }
 
 function createDateGenerator(groupMode: GroupMode): (date: Date) => string {

@@ -25,6 +25,8 @@ type AsyncVoidFunction = () => Promise<void>;
 type CallbackFunction = () => void;
 type DialogCallback = AsyncVoidFunction | CallbackFunction;
 
+const ANIMATION_DURATION = 200;
+
 export interface DialogTypeArgs {
   "success": {
     onConfirm?: DialogCallback;
@@ -88,11 +90,11 @@ const resolveCallback = (dialog: DialogState, action: ActionType): DialogCallbac
   if (action === 'confirm' && dialog.onConfirm) {
     return dialog.onConfirm;
   }
-
+  
   if (action === 'cancel' && isDialogTypeConfig(dialog, "question") && dialog.onCancel) {
     return dialog.onCancel;
   }
-
+  
   if (action === 'retry' && isDialogTypeConfig(dialog, "error") && dialog.retry) {
     return dialog.retry;
   }
@@ -109,9 +111,8 @@ const AlertDialogContext = createContext<AlertDialogContextType | null>(null);
 export const AlertDialogProvider = ({children}: Readonly<PropsWithChildren>) => {
   const [dialogs, setDialogs] = useState<DialogState[]>([]);
   const [loadingState, setLoadingState] = useState<LoadingState[]>([]);
-
-  const ANIMATION_DURATION = 200;
-
+  
+  
   const pushAlertDialog = useCallback(<Type extends DialogType>(config: AlertDialogConfigurer<Type>) => {
     const dialogConfig: DialogState = {
       ...config,
@@ -121,64 +122,64 @@ export const AlertDialogProvider = ({children}: Readonly<PropsWithChildren>) => 
     setDialogs(prev => [...prev, dialogConfig]);
     return dialogConfig.id;
   }, []);
-
+  
   const popAlertDialog = useCallback((id: string) => {
     // Primero marcamos el diálogo como "cerrando"
     setDialogs(prev => prev.map(dialog =>
       dialog.id === id ? {...dialog, isClosing: true} : dialog
     ));
-
+    
     // Después del tiempo de animación, eliminamos el diálogo
     setTimeout(() => {
       setDialogs(prev => prev.filter(dialog => dialog.id !== id));
       setLoadingState(prev => prev.filter(state => state.dialogId !== id));
     }, ANIMATION_DURATION);
   }, []);
-
+  
   const isLoading = useCallback((dialogId: string, action: ActionType) => {
     return loadingState.some(state => state.dialogId === dialogId && state.action === action);
   }, [loadingState]);
-
+  
   const isDialogLoading = useCallback((dialogId: string) => {
     return loadingState.some(state => state.dialogId === dialogId);
   }, [loadingState]);
-
+  
   const handleAction = useCallback(async (dialog: DialogState, action: ActionType) => {
-
+    
     const callback = resolveCallback(dialog, action);
-
+    
     if (!callback) {
       popAlertDialog(dialog.id);
       return;
     }
-
+    
     const isAsync = isAsyncCallback(callback);
-
+    
     try {
-
+      
       if (isAsync) {
         setLoadingState(prev => [...prev, {dialogId: dialog.id, action}]);
       }
-
+      
       await executeCallback(callback);
       popAlertDialog(dialog.id);
     } catch (error) {
-
+      
       console.error('Error executing dialog action:', error);
-
+      
       dialog.onError?.(error);
       if (isAsync) {
         setLoadingState(prev => prev.filter(state => !(state.dialogId === dialog.id && state.action === action)));
       }
-
+      
     }
   }, [popAlertDialog]);
-
+  
   const contextValue = useMemo(() => ({
     pushAlertDialog,
     popAlertDialog,
   }), [pushAlertDialog, popAlertDialog]);
-
+  
   return (
     <AlertDialogContext.Provider value={contextValue}>
       {children}

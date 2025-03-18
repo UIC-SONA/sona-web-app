@@ -1,3 +1,5 @@
+import {Filter} from "@/components/crud/crud-table-filters.ts";
+
 export interface PageInfo {
   size: number;
   number: number;
@@ -37,7 +39,7 @@ export type PageQuery<F = {}> = {
   page?: number;
   size?: number;
   sorts?: Sort[];
-  filters?: Partial<F>;
+  filters?: Filter<F>;
 };
 
 export type Sort = {

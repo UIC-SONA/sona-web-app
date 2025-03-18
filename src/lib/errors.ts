@@ -84,6 +84,8 @@ export function extractOptionalError(error: unknown): ErrorTitle | undefined {
   }
 
   const body = response.data;
+  
+  console.log("Has body", body);
 
   if (isProblemDetails(body)) {
     return {title: body.title, description: body.detail};

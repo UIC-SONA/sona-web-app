@@ -56,7 +56,6 @@ export default function LogIn() {
     },
   });
   
-  
   const onSubmit = async (data: z.infer<typeof loginSchema>) => {
     try {
       await login(data.username, data.password);
@@ -151,6 +150,11 @@ export default function LogIn() {
           ¿No tienes una cuenta?{" "}
           <Link to="/auth/sign-up" className="underline text-primary">
             Regístrate
+          </Link>
+        </p>
+        <p className="text-center text-xs mt-2">
+          <Link to="/privacy-policy" className="text-primary">
+            Terminos y condiciones
           </Link>
         </p>
       </CardFooter>

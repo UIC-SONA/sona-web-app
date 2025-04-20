@@ -1,9 +1,6 @@
 import BreadcrumbSubLayout from "@/layout/breadcrumb-sub-layout.tsx";
 import {useAuth} from "@/context/auth-context.tsx";
-import CrudTable, {
-  FilterComponentProps,
-  TableFactory
-} from "@/components/crud/crud-table.tsx";
+import CrudTable, {TableFactory} from "@/components/crud/crud-table.tsx";
 import {
   Appointment,
   AppointmentFilters,
@@ -45,6 +42,7 @@ import {CalendarDate} from "@internationalized/date";
 import DatePicker from "@/components/ui/date/date-picker.tsx";
 import {ZONE_ID} from "@/constans.ts";
 import {ExportScheme} from "@/lib/crud.ts";
+import {FilterComponentProps} from "@/components/crud/crud-table-filters.ts";
 
 
 export function AppointmentPage() {

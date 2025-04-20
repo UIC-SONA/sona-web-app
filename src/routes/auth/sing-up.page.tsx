@@ -151,7 +151,8 @@ export default function SignUp() {
                         />
                       </FormControl>
                       <UserIcon
-                        className="absolute top-1/2 left-3 transform -translate-y-1/2 h-5 w-5 text-muted-foreground"/>
+                        className="absolute top-1/2 left-3 transform -translate-y-1/2 h-5 w-5 text-muted-foreground"
+                      />
                     </div>
                     <FormMessage/>
                   </FormItem>

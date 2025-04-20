@@ -50,9 +50,9 @@ export default function UserBasePage(
 ) {
   
   const {authenticated} = useAuth();
+  const {pushAlertDialog} = useAlertDialog();
   if (!authenticated) return null;
   
-  const {pushAlertDialog} = useAlertDialog();
   
   const table: TableFactory<User, number, UserFilter> = {
     columns: [

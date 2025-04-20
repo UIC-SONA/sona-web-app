@@ -26,6 +26,7 @@ import LogIn from "@/routes/auth/log-in.page.tsx";
 import SingUp from "@/routes/auth/sing-up.page.tsx";
 import {userService} from "@/services/user-service.ts";
 import CommentsPage from "@/routes/posts/comments.page.tsx";
+import PrivacyPolicy from "@/routes/privacy-policy.tsx";
 
 
 createRoot(document.getElementById('root')!).render(
@@ -43,6 +44,7 @@ createRoot(document.getElementById('root')!).render(
 
 function SonaRoutes() {
   return <Routes>
+    <Route path="/privacy-policy" element={<PrivacyPolicy/>}/>
     <Route element={<AuthGuard hasAuthenticated redirect="/auth/login"/>}>
       <Route element={<MainLayout/>}>
         <Route index element={<Dashboard/>}/>
